@@ -17,7 +17,7 @@
 # Dockerfile for installing the necessary dependencies for building Hadoop.
 # See BUILDING.txt.
 
-FROM ubuntu:focal
+FROM ubuntu:20.04
 
 WORKDIR /root
 
@@ -43,9 +43,9 @@ RUN chmod a+x pkg-resolver/*.sh pkg-resolver/*.py \
 # Install packages from apt
 ######
 # hadolint ignore=DL3008,SC2046
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 vim tmux openssh-client openssh-server \
-    && apt-get install -y --no-install-recommends $(pkg-resolver/resolve.py ubuntu:focal::arch64) \
+RUN apt-get -q update \
+    && apt-get -q install -y --no-install-recommends python3 \
+    && apt-get -q install -y --no-install-recommends $(pkg-resolver/resolve.py ubuntu:focal::arch64) \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -59,7 +59,6 @@ ENV PYTHONIOENCODING=utf-8
 ENV MAVEN_HOME /usr
 # JAVA_HOME must be set in Maven >= 3.5.0 (MNG-6003)
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-arm64
-ENV PATH=$JAVA_HOME/bin:$PATH
 
 #######
 # Set env vars for SpotBugs 4.2.2
@@ -91,24 +90,8 @@ RUN pkg-resolver/install-spotbugs.sh ubuntu:focal::arch64
 RUN pkg-resolver/install-boost.sh ubuntu:focal::arch64
 RUN pkg-resolver/install-protobuf.sh ubuntu:focal::arch64
 
-ARG USERNAME=hadoop
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
-
-# Create the user
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
-
-USER $USERNAME
-WORKDIR /home/${USERNAME}/hdfs-trace-repair
-
-# Set up ssh
-RUN ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa \
-    && cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys \
-    && chmod 0600 ~/.ssh/authorized_keys
-
-ENV HADOOP_HOME "/home/${USERNAME}/hdfs-trace-repair/hadoop-dist/target/hadoop-3.4.0-SNAPSHOT"
-
-CMD [ "bash", "-c", "sudo service ssh start; bash"]
+###
+# Everything past this point is either not needed for testing or breaks Yetus.
+# So tell Yetus not to read the rest of the file:
+# YETUS CUT HERE
+###
