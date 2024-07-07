@@ -50,6 +50,7 @@ import org.apache.hadoop.io.ReadaheadPool.ReadaheadRequest;
 import org.apache.hadoop.net.SocketOutputStream;
 import org.apache.hadoop.util.AutoCloseableLock;
 import org.apache.hadoop.util.DataChecksum;
+import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.tracing.TraceScope;
 
 import static org.apache.hadoop.io.nativeio.NativeIO.POSIX.POSIX_FADV_DONTNEED;
@@ -57,6 +58,7 @@ import static org.apache.hadoop.io.nativeio.NativeIO.POSIX.POSIX_FADV_SEQUENTIAL
 
 import org.apache.hadoop.classification.VisibleForTesting;
 import org.apache.hadoop.util.Preconditions;
+import org.apache.hadoop.util.TimerFactory;
 import org.slf4j.Logger;
 import org.apache.hadoop.util.OurECLogger;
 
@@ -186,6 +188,9 @@ class BlockSender implements java.io.Closeable {
   // is likely to result in minimal extra IO.
   private static final long CHUNK_SIZE = 512;
 
+  MetricTimer outboundTimer;
+  long erasedBlockId;
+
   private static final String EIO_ERROR = "Input/output error";
   /**
    * Constructor
@@ -200,11 +205,15 @@ class BlockSender implements java.io.Closeable {
    * @param clientTraceFmt format string used to print client trace logs
    * @throws IOException
    */
-  BlockSender(ExtendedBlock block, long startOffset, long length,
+  BlockSender(ExtendedBlock block, long erasedBlockId, long startOffset, long length,
               boolean corruptChecksumOk, boolean verifyChecksum,
               boolean sendChecksum, DataNode datanode, String clientTraceFmt,
               CachingStrategy cachingStrategy)
       throws IOException {
+
+    // outboundTimer = TimerFactory.getTimer("Outbound_Operations_" + id++);
+    outboundTimer = TimerFactory.getTimer("Outbound_Operations");
+    this.erasedBlockId = erasedBlockId;
     InputStream blockIn = null;
     DataInputStream checksumIn = null;
     FsVolumeReference volumeRef = null;
@@ -611,6 +620,7 @@ class BlockSender implements java.io.Closeable {
         SocketOutputStream sockOut = (SocketOutputStream)out;
         // First write header and checksums
         sockOut.write(buf, headerOff, dataOff - headerOff);
+        outboundTimer.mark("Block:\t" + erasedBlockId + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength\t" + (dataOff - headerOff));
 
         // no need to flush since we know out is not a buffered stream
         FileChannel fileCh = ((FileInputStream)ris.getDataIn()).getChannel();

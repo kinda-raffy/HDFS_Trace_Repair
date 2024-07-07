@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.lang.management.ManagementFactory;
@@ -60,7 +61,10 @@ public class MetricTimer implements AutoCloseable {
 
     public synchronized void mark(String label) {
         try {
-            writeLog(label, System.currentTimeMillis());
+            Date date = new Date();
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy'T'HH:mm:ss:SSS");
+            String formattedDate = sdf.format(date);
+            writeLog(label, formattedDate);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -69,7 +73,16 @@ public class MetricTimer implements AutoCloseable {
     private void writeLog(String label, long duration) {
         try {
             double durationSeconds = duration / 1_000_000_000.0;
-            logFileWriter.write(String.format("%d (ns)\t%.6f (secs)\t[ %s ]\n", duration, durationSeconds, label));
+            logFileWriter.write(String.format("%d(ns)\t%.6f(secs)\t%s\n", duration, durationSeconds, label));
+            logFileWriter.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void writeLog(String label, String duration) {
+        try {
+            logFileWriter.write(duration + "\t" + label + "\n");
             logFileWriter.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
