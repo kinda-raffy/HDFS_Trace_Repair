@@ -118,6 +118,27 @@ public class Sender implements DataTransferProtocol {
     send(out, Op.READ_BLOCK, proto);
   }
 
+  public void readBlock(final ExtendedBlock blk,
+      ExtendedBlock erasedBlk,
+      final Token<BlockTokenIdentifier> blockToken,
+      final String clientName,
+      final long blockOffset,
+      final long length,
+      final boolean sendChecksum,
+      final CachingStrategy cachingStrategy) throws IOException {
+
+    OpReadBlockProto proto = OpReadBlockProto.newBuilder()
+        .setHeader(DataTransferProtoUtil.buildClientHeader(blk, erasedBlk, clientName,
+            blockToken))
+        .setOffset(blockOffset)
+        .setLen(length)
+        .setSendChecksums(sendChecksum)
+        .setCachingStrategy(getCachingStrategy(cachingStrategy))
+        .build();
+
+    send(out, Op.READ_BLOCK, proto);
+  }
+
   @Override
   public void readBlockTrace(final ExtendedBlock blk,
                              final Token<BlockTokenIdentifier> blockToken,
@@ -131,6 +152,33 @@ public class Sender implements DataTransferProtocol {
 
     OpReadBlockTraceProto proto = OpReadBlockTraceProto.newBuilder()
             .setHeader(DataTransferProtoUtil.buildClientHeader(blk, clientName,
+                    blockToken))
+            .setOffset(blockOffset)
+            .setLen(length)
+            .setHelperIndex(helperNodeIndex)
+            .setLostBlockIndex(erasedNodeIndex)
+            .setDataBlkNum(dataBlkNum)
+            .setParityBlkNum(parityBlkNum)
+            .setSendChecksums(sendChecksum)
+            .setCachingStrategy(getCachingStrategy(cachingStrategy))
+            .build();
+
+    send(out, Op.READ_TRACE, proto);
+  }
+
+  public void readBlockTrace(final ExtendedBlock blk,
+                             ExtendedBlock erasedBlk,
+                             final Token<BlockTokenIdentifier> blockToken,
+                             final String clientName,
+                             final long blockOffset,
+                             final long length,
+                             final boolean sendChecksum,
+                             final CachingStrategy cachingStrategy,
+                             final int erasedNodeIndex, final int helperNodeIndex,
+                             final int dataBlkNum, final int parityBlkNum ) throws IOException {
+
+    OpReadBlockTraceProto proto = OpReadBlockTraceProto.newBuilder()
+            .setHeader(DataTransferProtoUtil.buildClientHeader(blk, erasedBlk, clientName,
                     blockToken))
             .setOffset(blockOffset)
             .setLen(length)

@@ -43,6 +43,7 @@ class StripedBlockReconstructor extends StripedReconstructor
   private final int nodeCount = getStripedReader().numberOfInputs();
   ByteBuffer[] totalByteBuffers = new ByteBuffer[nodeCount];
   private StripedWriter stripedWriter;
+  private boolean isTR = false;
 
   private ReconstructTargetInputs reconstructTargetInputs;
 
@@ -52,6 +53,10 @@ class StripedBlockReconstructor extends StripedReconstructor
 
     stripedWriter = new StripedWriter(this, getDatanode(),
             getConf(), stripedReconInfo);
+
+    if (stripedReconInfo.getEcPolicy().getCodecName().equals("tr")) {
+      isTR = true;
+    }
   }
 
   boolean hasValidTargets() {
@@ -97,8 +102,10 @@ class StripedBlockReconstructor extends StripedReconstructor
   @Override
   void reconstruct() throws IOException {
     int erasedNodeIndex = getStripedReader().getErasedIndex();
-    reconstructTargetInputs =
-            new ReconstructTargetInputs(nodeCount, getMaxTargetLength(), erasedNodeIndex, recoveryTable);
+    if (isTR) {
+      reconstructTargetInputs = new ReconstructTargetInputs(nodeCount, getMaxTargetLength(), erasedNodeIndex, recoveryTable);
+    }
+    
     while (getPositionInBlock() < getMaxTargetLength()) {
       DataNodeFaultInjector.get().stripedBlockReconstruction();
       long remaining = getMaxTargetLength() - getPositionInBlock();
@@ -154,15 +161,14 @@ class StripedBlockReconstructor extends StripedReconstructor
 
   private void reconstructTargets(int toReconstructLen) throws IOException {
     ByteBuffer[] inputs = getStripedReader().getInputBuffers(toReconstructLen);
-    reconstructTargetInputs.appendInputs(inputs);
-    ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
-
+    
     int[] erasedIndices = stripedWriter.getRealTargetIndices();
     ByteBuffer[] outputs = stripedWriter.getRealTargetBuffers(toReconstructLen);
 
+    // Validation is not tested to work
     if (isValidationEnabled()) {
       markBuffers(inputs);
-      decode(decoderInputs, erasedIndices, outputs);
+      decode(inputs, erasedIndices, outputs);
       resetBuffers(inputs);
 
       DataNodeFaultInjector.get().badDecoding(outputs);
@@ -180,7 +186,14 @@ class StripedBlockReconstructor extends StripedReconstructor
         throw e;
       }
     } else {
-      decode(decoderInputs, erasedIndices, outputs);
+      if (isTR) {
+        // 
+        reconstructTargetInputs.appendInputs(inputs);
+        ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
+        decode(decoderInputs, erasedIndices, outputs);
+      } else {
+        decode(inputs, erasedIndices, outputs);
+      }
     }
 
     stripedWriter.updateRealTargetBuffers(toReconstructLen);

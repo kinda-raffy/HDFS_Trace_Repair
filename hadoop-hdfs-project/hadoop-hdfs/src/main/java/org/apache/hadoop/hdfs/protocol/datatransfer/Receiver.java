@@ -60,6 +60,8 @@ public abstract class Receiver implements DataTransferProtocol {
   private final Tracer tracer;
   protected DataInputStream in;
 
+  protected long erasedBlockId;
+
   protected Receiver(Tracer tracer) {
     this.tracer = tracer;
   }
@@ -158,6 +160,8 @@ public abstract class Receiver implements DataTransferProtocol {
             proto.getClass().getSimpleName());
     OurECLogger ourECLogger = OurECLogger.getInstance();
     ourECLogger.write(this, "Receiver.java", proto.getLostBlockIndex() + " proto length: " + proto.getLen());
+    
+    this.erasedBlockId = proto.getHeader().getBaseHeader().getTraceInfo().getTraceId();
     try {
       readBlockTrace(PBHelperClient.convert(proto.getHeader().getBaseHeader().getBlock()),
               PBHelperClient.convert(proto.getHeader().getBaseHeader().getToken()),
@@ -183,6 +187,7 @@ public abstract class Receiver implements DataTransferProtocol {
     TraceScope traceScope = continueTraceSpan(proto.getHeader(),
         proto.getClass().getSimpleName());
     try {
+      this.erasedBlockId = proto.getHeader().getBaseHeader().getTraceInfo().getTraceId();
       readBlock(PBHelperClient.convert(proto.getHeader().getBaseHeader().getBlock()),
         PBHelperClient.convert(proto.getHeader().getBaseHeader().getToken()),
         proto.getHeader().getClientName(),

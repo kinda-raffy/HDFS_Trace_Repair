@@ -25,6 +25,7 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtilClient.CorruptedBlocks;
+import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.server.datanode.CachingStrategy;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
@@ -92,6 +93,8 @@ class StripedReader {
   private final ErasureCodingPolicy ecPolicy;
   private HelperTable96Client helperTable = new HelperTable96Client();
 
+  MetricTimer inboundTrafficTimer;
+
   StripedReader(StripedReconstructor reconstructor, DataNode datanode,
       Configuration conf, StripedReconstructionInfo stripedReconInfo) {
     stripedReadTimeoutInMills = conf.getInt(
@@ -104,6 +107,8 @@ class StripedReader {
     this.reconstructor = reconstructor;
     this.datanode = datanode;
     this.conf = conf;
+    
+    inboundTrafficTimer = TimerFactory.getTimer("Inbound_Traffic");
 
     dataBlkNum = stripedReconInfo.getEcPolicy().getNumDataUnits();
     parityBlkNum = stripedReconInfo.getEcPolicy().getNumParityUnits();
@@ -223,7 +228,7 @@ class StripedReader {
     return new StripedBlockReader(this, datanode,
         conf, liveIndices[idxInSources],
         reconstructor.getBlock(liveIndices[idxInSources]),
-        sources[idxInSources], offsetInBlock);
+        sources[idxInSources], offsetInBlock, reconstructor.getBlockGroup());
   }
 
   StripedBlockReader createTRReader(int idxInSources, int helperIndex, long offsetInBlock) {
@@ -231,7 +236,7 @@ class StripedReader {
             conf, liveIndices[idxInSources],
             reconstructor.getBlock(liveIndices[idxInSources]),
             sources[idxInSources], offsetInBlock,
-            isTr, helperIndex, erasedIndex, dataBlkNum, parityBlkNum);
+            isTr, helperIndex, erasedIndex, dataBlkNum, parityBlkNum, reconstructor.getBlockGroup());
   }
 
   private int numberOfChunks(long datalen) {
@@ -240,9 +245,9 @@ class StripedReader {
 
   private void initBufferSize() {
     // [TODO] Clean.
-    // int bytesPerChecksum = checksum.getBytesPerChecksum();
+    int bytesPerChecksum = checksum.getBytesPerChecksum();
     // The bufferSize is flat to divide bytesPerChecksum
-    // int readBufferSize = stripedReadBufferSize;
+    int readBufferSize = stripedReadBufferSize;
     // bufferSize = readBufferSize < bytesPerChecksum ? bytesPerChecksum :
     //     readBufferSize - readBufferSize % bytesPerChecksum;
     bufferSize = DFSUtilClient.CHUNK_SIZE * numberOfChunks(DFSUtilClient.getIoFileBufferSize(conf));
@@ -386,14 +391,22 @@ class StripedReader {
      */
     ourECLogger.write(this, datanode.getDatanodeUuid(), "successList: " + Arrays.toString(successList));
     ourECLogger.write(this, datanode.getDatanodeUuid(), "liveIndices: " + Arrays.toString(liveIndices));
-    MetricTimer inboundTrafficTimer = TimerFactory.getTimer("Inbound_Traffic");
+
+    DatanodeID datanodeID = null;
+    
     for (int i = 0; i < minRequiredSources; i++) {
       StripedBlockReader reader = readers.get(successList[i]);
+
+      if (isTr) {
+        datanodeID = reader.getBlockTraceReaderRemote().getDatanodeID();
+      } else {
+        datanodeID = reader.getBlockReaderRemote().getDatanodeID();
+      }
+
       int toRead = getReadLength(liveIndices[successList[i]],
           reconstructLength);
       ourECLogger.write(this, datanode.getDatanodeUuid(), "toRead: " + toRead + " - liveIndex: " + liveIndices[successList[i]]);
-      inboundTrafficTimer.mark("Read from source: " + liveIndices[successList[i]] + " of read length: " + toRead);
-
+      inboundTrafficTimer.mark("Block\t" + reconstructor.getBlockGroup().getBlockId() + "\tSource:\t" + datanodeID.getXferAddr() + "\tLength\t" + toRead);
       if (toRead > 0) {
         Callable<BlockReadStats> readCallable =
             reader.readFromBlock(toRead, corruptedBlocks);
@@ -467,6 +480,9 @@ class StripedReader {
           reconstructor.getBlockGroup().getBlockId();
       throw new IOException(error);
     }
+    MetricTimer endRead = TimerFactory.getTimer("Completed_Striped_Read");
+    endRead.mark(reconstructor.getBlockGroup().getBlockId() + "\tEnd Read");
+    
     return newSuccess;
   }
 

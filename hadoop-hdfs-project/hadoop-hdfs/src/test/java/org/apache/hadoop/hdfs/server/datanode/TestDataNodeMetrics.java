@@ -563,7 +563,7 @@ public class TestDataNodeMetrics {
       ExtendedBlock b =
           fs.getClient().getLocatedBlocks(p.toString(), 0).get(0).getBlock();
       try {
-        new BlockSender(b, 0, -1, false, true, true,
+        new BlockSender(b, 0, 0, -1, false, true, true,
                 cluster.getDataNodes().get(0), null,
                 CachingStrategy.newDefaultStrategy());
         fail("Must throw FileNotFoundException");

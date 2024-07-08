@@ -456,6 +456,55 @@ public class BlockReaderRemote implements BlockReader {
     DataTransferProtoUtil.checkBlockOpStatus(status, logInfo);
   }
 
+  public static BlockReader newBlockReader(String file,
+  ExtendedBlock block,
+  ExtendedBlock erasedBlock,
+  Token<BlockTokenIdentifier> blockToken,
+  long startOffset, long len,
+  boolean verifyChecksum,
+  String clientName,
+  Peer peer, DatanodeID datanodeID,
+  PeerCache peerCache,
+  CachingStrategy cachingStrategy,
+  int networkDistance, Configuration configuration) throws IOException {
+// in and out will be closed when sock is closed (by the caller)
+int bufferSize = configuration.getInt(
+    DFS_CLIENT_BLOCK_READER_REMOTE_BUFFER_SIZE_KEY,
+    DFS_CLIENT_BLOCK_READER_REMOTE_BUFFER_SIZE_DEFAULT);
+final DataOutputStream out = new DataOutputStream(new BufferedOutputStream(
+    peer.getOutputStream(), bufferSize));
+new Sender(out).readBlock(block, erasedBlock, blockToken, clientName, startOffset, len,
+    verifyChecksum, cachingStrategy);
+
+//
+// Get bytes in block
+//
+DataInputStream in = new DataInputStream(peer.getInputStream());
+
+BlockOpResponseProto status = BlockOpResponseProto.parseFrom(
+    PBHelperClient.vintPrefixed(in));
+checkSuccess(status, peer, block, file);
+ReadOpChecksumInfoProto checksumInfo =
+    status.getReadOpChecksumInfo();
+DataChecksum checksum = DataTransferProtoUtil.fromProto(
+    checksumInfo.getChecksum());
+//Warning when we get CHECKSUM_NULL?
+
+// Read the first chunk offset.
+long firstChunkOffset = checksumInfo.getChunkOffset();
+
+if ( firstChunkOffset < 0 || firstChunkOffset > startOffset ||
+    firstChunkOffset <= (startOffset - checksum.getBytesPerChecksum())) {
+  throw new IOException("BlockReader: error in first chunk offset (" +
+      firstChunkOffset + ") startOffset is " +
+      startOffset + " for file " + file);
+}
+
+return new BlockReaderRemote(file, block.getBlockId(), checksum,
+    verifyChecksum, startOffset, firstChunkOffset, len, peer, datanodeID,
+    peerCache, networkDistance);
+}
+
   @Override
   public int available() {
     // An optimistic estimate of how much data is available
@@ -481,5 +530,9 @@ public class BlockReaderRemote implements BlockReader {
   @Override
   public int getNetworkDistance() {
     return networkDistance;
+  }
+
+  public DatanodeID getDatanodeID() {
+    return datanodeID;
   }
 }
