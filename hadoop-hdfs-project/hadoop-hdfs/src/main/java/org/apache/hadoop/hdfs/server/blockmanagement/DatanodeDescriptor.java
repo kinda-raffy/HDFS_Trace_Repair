@@ -709,8 +709,9 @@ public class DatanodeDescriptor extends DatanodeInfo {
     BlockECReconstructionInfo task = new BlockECReconstructionInfo(block,
         sources, targets, liveBlockIndices, excludeReconstrutedIndices, ecPolicy);
     MetricTimer reconstructionTimer = TimerFactory.getTimer("Block_Reconstruction_Task");
+    reconstructionTimer.mark("Adding block reconstruction task\t" + block.getBlockId());
     ecBlocksToBeErasureCoded.offer(task);
-    reconstructionTimer.mark(block.getBlockId() + "\tBlock reconstruction task to " + getName());
+    // reconstructionTimer.mark(block.getBlockId() + "\tBlock reconstruction task to " + getName());
     BlockManager.LOG.debug("Adding block reconstruction task " + task + "to "
         + getName() + ", current queue size is " + ecBlocksToBeErasureCoded.size());
   }

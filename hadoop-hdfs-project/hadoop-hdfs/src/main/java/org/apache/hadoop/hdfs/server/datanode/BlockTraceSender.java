@@ -714,7 +714,7 @@ class BlockTraceSender implements java.io.Closeable {
         }
         byte[] compressedRepairTrace = new byte[(int) (encodeLength * (bw / 8.0))];
         compressTrace(repairTrace, compressedRepairTrace);
-        helperTraceTimer.stop("Total encoding operation at helper-node: " + nodeIndex + " with erased node: " + erasedNodeIndex);
+        helperTraceTimer.stop("Block:\t" + erasedBlockId + "\tAt:\t" + datanode.getDatanodeId().getXferAddr());
         ourTestLogger.write("Trace Generation at HelperNode: " + nodeIndex + " with erased node: " + erasedNodeIndex + " - bw: " + bw);
         return compressedRepairTrace;
     }
