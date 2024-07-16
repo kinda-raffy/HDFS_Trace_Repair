@@ -322,15 +322,6 @@ class StripedReader {
       int traceBandwidth = Integer.parseInt(elements[0]);
       int ONE_BYTE = 8; // 8 bits.
       int tempBytesToKeep = (tempBuffer.length) * traceBandwidth / ONE_BYTE;
-      if (readerIndex == 3) {
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "getInputBuffers 0 - reader.getIndex(): " + readerIndex + " - " +
-                " - dataLen: " + tempBuffer.length + " - dataLenToKeep: " + tempBytesToKeep + " - data: " +
-                Arrays.toString(Arrays.copyOfRange(tempBuffer, 0, tempBuffer.length)));
-       // ourECLogger.write(this, datanode.getDatanodeUuid(), "getInputBuffers 0 - reader.getIndex(): " + readerIndex + " - " +
-       //         " - dataLen: " + tempBuffer.length + " - dataLenToKeep: " + tempBytesToKeep + " - data: " +
-       //         Arrays.toString(Arrays.copyOfRange(tempBuffer, 0, 100)) +
-       //         "- endData: " + Arrays.toString(Arrays.copyOfRange(tempBuffer, tempBytesToKeep - 30, tempBytesToKeep)));
-      }
     }
 
     if (successList.length < dataBlkNum) {
