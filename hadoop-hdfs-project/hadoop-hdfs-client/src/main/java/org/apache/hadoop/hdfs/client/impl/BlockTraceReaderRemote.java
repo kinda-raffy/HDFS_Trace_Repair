@@ -49,6 +49,7 @@ import org.apache.hadoop.hdfs.server.datanode.CachingStrategy;
 import org.apache.hadoop.hdfs.shortcircuit.ClientMmap;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.DataChecksum;
+import org.apache.hadoop.util.MetricTimer;
 // import org.apache.htrace.core.TraceScope;
 import org.apache.hadoop.tracing.TraceScope;
 
@@ -59,6 +60,7 @@ import org.apache.hadoop.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.util.OurECLogger;
+import org.apache.hadoop.util.TimerFactory;
 
 /**
  * This is a wrapper around connection to datanode
@@ -132,6 +134,8 @@ public class BlockTraceReaderRemote implements BlockReader {
     private int helperNodeIndex;
     private  HelperTable96Client helperTable = new HelperTable96Client();
 
+
+    MetricTimer blockReadTimer = TimerFactory.getTimer("Block_Read");
 
     @VisibleForTesting
     public Peer getPeer() {
@@ -250,6 +254,7 @@ public class BlockTraceReaderRemote implements BlockReader {
             if (verifyChecksum) {
                 sendReadResult(Status.CHECKSUM_OK);
             } else {
+                blockReadTimer.mark("Block Read\t" + blockId);
                 sendReadResult(Status.SUCCESS);
             }
         }

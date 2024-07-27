@@ -50,12 +50,13 @@ import org.apache.hadoop.hdfs.server.datanode.CachingStrategy;
 import org.apache.hadoop.hdfs.shortcircuit.ClientMmap;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.DataChecksum;
-
+import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.classification.VisibleForTesting;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.util.OurECLogger;
+import org.apache.hadoop.util.TimerFactory;
 
 import static org.apache.hadoop.hdfs.client.HdfsClientConfigKeys.DFS_CLIENT_BLOCK_READER_REMOTE_BUFFER_SIZE_DEFAULT;
 import static org.apache.hadoop.hdfs.client.HdfsClientConfigKeys.DFS_CLIENT_BLOCK_READER_REMOTE_BUFFER_SIZE_KEY;
@@ -127,6 +128,8 @@ public class BlockReaderRemote implements BlockReader {
   private boolean sentStatusCode = false;
 
   private final int networkDistance;
+
+  MetricTimer blockReadTimer = TimerFactory.getTimer("Block_Read");
 
   @VisibleForTesting
   public Peer getPeer() {
@@ -236,8 +239,10 @@ public class BlockReaderRemote implements BlockReader {
       ourlog.write("\n Reading the one last trailing empty packet...This finishes the whole client read.");
       readTrailingEmptyPacket();
       if (verifyChecksum) {
+        blockReadTimer.mark("Block Read\t" + blockId);
         sendReadResult(Status.CHECKSUM_OK);
       } else {
+        blockReadTimer.mark("Block Read\t" + blockId);
         sendReadResult(Status.SUCCESS);
       }
     }

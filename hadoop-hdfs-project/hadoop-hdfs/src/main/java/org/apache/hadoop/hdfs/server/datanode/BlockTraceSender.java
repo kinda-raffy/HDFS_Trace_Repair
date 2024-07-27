@@ -624,7 +624,7 @@ class BlockTraceSender implements java.io.Closeable {
             // off - the start offset in the data.
             // len - the number of bytes to write.
             out.write(buf, headerOffset, encoderOutput.length + headerLength);
-            outboundTimer.mark("Block:\t" + erasedBlockId + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength:\t" + (encoderOutput.length) + "\tBandwith:" + bw);
+            outboundTimer.mark("Block:\t" + block.getBlockId() + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength:\t" + (encoderOutput.length) + "\tBandwith:" + bw);
             ourlog.write(this, datanode.getDatanodeHostname(), "Send data from node: " + helperNodeIndex + " with lost node: " + lostNodeIndex + " of data length: " + encoderOutput.length);
         } catch (IOException e) {
             String exceptionMessage = "sendPacketMethod - Error: " + e.getMessage();
