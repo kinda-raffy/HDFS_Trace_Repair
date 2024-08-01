@@ -18,6 +18,7 @@
 package org.apache.hadoop.hdfs.server.datanode.erasurecode;
 
 import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.hdfs.DFSUtilClient;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeFaultInjector;
 import org.apache.hadoop.hdfs.server.datanode.metrics.DataNodeMetrics;
 import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.RecoveryTable;
@@ -45,7 +46,7 @@ class StripedBlockReconstructor extends StripedReconstructor
   private StripedWriter stripedWriter;
   private boolean isTR = false;
 
-  private ReconstructTargetInputs reconstructTargetInputs;
+  private CollectChunkStream reconstructTargetInputs;
 
   StripedBlockReconstructor(ErasureCodingWorker worker,
                             StripedReconstructionInfo stripedReconInfo) {
@@ -103,7 +104,7 @@ class StripedBlockReconstructor extends StripedReconstructor
   void reconstruct() throws IOException {
     int erasedNodeIndex = getStripedReader().getErasedIndex();
     if (isTR) {
-      reconstructTargetInputs = new ReconstructTargetInputs(nodeCount, getMaxTargetLength(), erasedNodeIndex, recoveryTable);
+      reconstructTargetInputs = new CollectChunkStream(nodeCount, DFSUtilClient.CHUNK_SIZE, erasedNodeIndex, recoveryTable);
     }
     
     while (getPositionInBlock() < getMaxTargetLength()) {
@@ -122,7 +123,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       MetricTimer diskOperationTimer = TimerFactory.getTimer("Disk_Operations");
       diskOperationTimer.start();
       getStripedReader().readMinimumSources(toReconstructLen);
-      diskOperationTimer.stop("Read data from helper-nodes at recovery-node for reconstruction");
+      diskOperationTimer.stop("Read data from helper-nodes at recovery-node for reconstruction\t"+ getBlockGroup().getBlockId());
       // ourTestLogger.write("Read " + toReconstructLen + " bytes from " +
       //     getStripedReader().getMinRequiredSources() + " sources. Total bytes read: "
       //     + bytesToRead + " out of " + getMaxTargetLength() + " bytes");
@@ -133,7 +134,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       MetricTimer reconstructionTimer = TimerFactory.getTimer("Recovery_Reconstruct");
       reconstructionTimer.start();
       reconstructTargets(toReconstructLen);
-      reconstructionTimer.stop("Decode chunk from sources");
+      reconstructionTimer.stop("Decode chunk from sources\t" + getBlockGroup().getBlockId());
       long decodeEnd = Time.monotonicNow();
 
       // step3: transfer data
@@ -146,7 +147,7 @@ class StripedBlockReconstructor extends StripedReconstructor
         String error = "Transfer failed for all targets.";
         throw new IOException(error);
       }
-      diskOperationTimer.stop("Save reconstructed data to recovery node");
+      diskOperationTimer.stop("Save reconstructed data to recovery node\t" + getBlockGroup().getBlockId());
       long writeEnd = Time.monotonicNow();
 
       // Only successful reconstructions are recorded.
@@ -218,8 +219,7 @@ class StripedBlockReconstructor extends StripedReconstructor
     stripedWriter.clearBuffers();
   }
 
-  static class ReconstructTargetInputs {
-    ByteBuffer[] inputs;
+  static class CollectChunkStream {
     byte[] bandwidth;
     int nodeCount;
     int erasedNodeIndex;
@@ -228,9 +228,8 @@ class StripedBlockReconstructor extends StripedReconstructor
     int[] writeLengths;
     byte[][] totalInputs;
 
-    ReconstructTargetInputs(int nodeCount, long maxTargetLength, int erasedNodeIndex, RecoveryTable recoveryTable) {
-      this.inputs = new ByteBuffer[nodeCount];
-      this.totalInputs = new byte[nodeCount][(int) maxTargetLength];
+    CollectChunkStream(int nodeCount, int chunkSize, int erasedNodeIndex, RecoveryTable recoveryTable) {
+      this.totalInputs = new byte[nodeCount][chunkSize];
       this.writeLengths = new int[nodeCount];
       this.nodeCount = nodeCount;
       this.erasedNodeIndex = erasedNodeIndex;
@@ -242,7 +241,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
     }
     void appendInputs(ByteBuffer[] receivedByteBuffers) {
-      assert inputs.length == receivedByteBuffers.length;
+      assert nodeCount == receivedByteBuffers.length;
 
       for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
         if (nodeIndex == erasedNodeIndex) { continue; }
@@ -256,7 +255,7 @@ class StripedBlockReconstructor extends StripedReconstructor
 
     ByteBuffer[] getInputs(int toReconstructLen) {
       ByteBuffer[] decoderInputs = new ByteBuffer[nodeCount];
-      for (int nodeIndex = 0; nodeIndex < inputs.length; nodeIndex++) {
+      for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
         if (nodeIndex == erasedNodeIndex) { continue; }
         int inputLimit = toReconstructLen * bandwidth[nodeIndex] / 8;
 
