@@ -46,8 +46,6 @@ class StripedBlockReconstructor extends StripedReconstructor
   private StripedWriter stripedWriter;
   private boolean isTR = false;
 
-  private CollectChunkStream reconstructTargetInputs;
-
   StripedBlockReconstructor(ErasureCodingWorker worker,
                             StripedReconstructionInfo stripedReconInfo) {
     super(worker, stripedReconInfo);
@@ -102,11 +100,6 @@ class StripedBlockReconstructor extends StripedReconstructor
 
   @Override
   void reconstruct() throws IOException {
-    int erasedNodeIndex = getStripedReader().getErasedIndex();
-    if (isTR) {
-      reconstructTargetInputs = new CollectChunkStream(nodeCount, DFSUtilClient.CHUNK_SIZE, erasedNodeIndex, recoveryTable);
-    }
-    
     while (getPositionInBlock() < getMaxTargetLength()) {
       DataNodeFaultInjector.get().stripedBlockReconstruction();
       long remaining = getMaxTargetLength() - getPositionInBlock();
@@ -188,9 +181,12 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
     } else {
       if (isTR) {
-        // 
+        int erasedNodeIndex = getStripedReader().getErasedIndex();
+        
+        CollectChunkStream reconstructTargetInputs = new CollectChunkStream(nodeCount, DFSUtilClient.CHUNK_SIZE, erasedNodeIndex, recoveryTable);
         reconstructTargetInputs.appendInputs(inputs);
         ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
+
         decode(decoderInputs, erasedIndices, outputs);
       } else {
         decode(inputs, erasedIndices, outputs);
