@@ -39,7 +39,7 @@ public class MetricTimer implements AutoCloseable {
     public void start() {
         try {
             Deque<Long> stack = startTimes.get();
-            stack.push(threadMXBean.getCurrentThreadCpuTime());
+            stack.push(System.currentTimeMillis());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -50,7 +50,7 @@ public class MetricTimer implements AutoCloseable {
         if (!stack.isEmpty()) {
             long start = stack.pop();
             try {
-                long duration = threadMXBean.getCurrentThreadCpuTime() - start;
+                long duration = System.currentTimeMillis() - start;
                 writeLog(label, duration);
                 recordedMetrics.computeIfAbsent(label, k -> new ArrayList<>()).add(duration);
             } catch (Exception e) {
