@@ -183,9 +183,11 @@ class StripedBlockReconstructor extends StripedReconstructor
       if (isTR) {
         int erasedNodeIndex = getStripedReader().getErasedIndex();
         
+        MetricTimer reconstructionTimer = TimerFactory.getTimer("Recovery_Reconstruct");
         CollectChunkStream reconstructTargetInputs = new CollectChunkStream(nodeCount, DFSUtilClient.CHUNK_SIZE, erasedNodeIndex, recoveryTable);
         reconstructTargetInputs.appendInputs(inputs);
         ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
+        reconstructionTimer.stop("Decompress chunk\t" + getBlockGroup().getBlockId());
 
         decode(decoderInputs, erasedIndices, outputs);
       } else {
