@@ -303,8 +303,7 @@ class BlockSender implements java.io.Closeable {
 
       // transferToFully() fails on 32 bit platforms for block sizes >= 2GB,
       // use normal transfer in those cases
-      this.transferToAllowed = datanode.getDnConf().transferToAllowed &&
-        (!is32Bit || length <= Integer.MAX_VALUE);
+      this.transferToAllowed = false;
 
       // Obtain a reference before reading data
       volumeRef = datanode.data.getVolume(block).obtainReference();
@@ -599,6 +598,8 @@ class BlockSender implements java.io.Closeable {
     }
     
     int dataOff = checksumOff + checksumDataLen;
+    MetricTimer diskOperationTimer = TimerFactory.getTimer("Disk_Operations");
+    diskOperationTimer.start();
     if (!transferTo) { // normal transfer
       try {
         ris.readDataFully(buf, dataOff, dataLen);
@@ -608,11 +609,12 @@ class BlockSender implements java.io.Closeable {
         }
         throw ioe;
       }
-
+      
       if (verifyChecksum) {
         verifyChecksum(buf, dataOff, dataLen, numChunks, checksumOff);
       }
     }
+    diskOperationTimer.stop("Read data\t" + block.getBlockId());
     // Add a new buffer which is an expensive operation.
     // Compute trace (optimising buffering involved).
     try {
