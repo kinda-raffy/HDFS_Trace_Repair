@@ -30,6 +30,7 @@ import org.apache.hadoop.util.TimerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * StripedBlockReconstructor reconstruct one or more missed striped block in
@@ -204,7 +205,7 @@ class StripedBlockReconstructor extends StripedReconstructor
     MetricTimer reconstructionTimer = TimerFactory.getTimer("Recovery_Reconstruct");
     reconstructionTimer.start();
     getDecoder().decode(inputs, erasedIndices, outputs);
-    reconstructionTimer.stop("Decode chunk");
+    reconstructionTimer.stop("Decode chunk\t" + bandwidths() + "\t" + getBlockGroup().getBlockId());
     long end = System.nanoTime();
     this.getDatanode().getMetrics().incrECDecodingTime(end - start);
   }
@@ -217,6 +218,16 @@ class StripedBlockReconstructor extends StripedReconstructor
     stripedWriter.clearBuffers();
   }
 
+
+  String bandwidths() {
+    byte[] bandwidth = new byte[nodeCount];
+    int erasedNodeIndex = getStripedReader().getErasedIndex();
+    for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+      bandwidth[nodeIndex] = recoveryTable.getByte_9_6(nodeIndex, erasedNodeIndex, 0);
+    }
+    return Arrays.toString(bandwidth);
+  }
+  
   static class CollectChunkStream {
     byte[] bandwidth;
     int nodeCount;
