@@ -14,6 +14,7 @@ import java.lang.management.ThreadMXBean;
 
 public class MetricTimer implements AutoCloseable {
     private static final ThreadLocal<Deque<Long>> startTimes = ThreadLocal.withInitial(LinkedList::new);
+    private static final ThreadLocal<Deque<Long>> startWallTimes = ThreadLocal.withInitial(LinkedList::new);
     private final ConcurrentHashMap<String, List<Long>> recordedMetrics = new ConcurrentHashMap<>();
     private final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
     private final String metric;
@@ -39,7 +40,9 @@ public class MetricTimer implements AutoCloseable {
     public void start() {
         try {
             Deque<Long> stack = startTimes.get();
-            stack.push(System.currentTimeMillis());
+            Deque<Long> stackWT = startWallTimes.get();
+            stack.push(threadMXBean.getCurrentThreadCpuTime());
+            stackWT.push(System.currentTimeMillis());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -47,11 +50,14 @@ public class MetricTimer implements AutoCloseable {
 
     public synchronized void stop(String label) {
         Deque<Long> stack = startTimes.get();
+        Deque<Long> stackWT = startWallTimes.get();
         if (!stack.isEmpty()) {
             long start = stack.pop();
+            long startWL = stackWT.pop();
             try {
-                long duration = System.currentTimeMillis() - start;
-                writeLog(label, duration);
+                long duration = threadMXBean.getCurrentThreadCpuTime() - start;
+                long durationWL = System.currentTimeMillis() - startWL;
+                writeLog(label, duration, durationWL);
                 recordedMetrics.computeIfAbsent(label, k -> new ArrayList<>()).add(duration);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -70,10 +76,9 @@ public class MetricTimer implements AutoCloseable {
         }
     }
 
-    private void writeLog(String label, long duration) {
+    private void writeLog(String label, long duration, long durationWL) {
         try {
-            double durationSeconds = duration / 1_000_000_000.0;
-            logFileWriter.write(String.format("%d\t(ns)\t%.6f\t(secs)\t%s\n", duration, durationSeconds, label));
+            logFileWriter.write(String.format("%d\tcpu(ns)\t%d\twall(ms)\t%s\n", duration, durationWL, label));
             logFileWriter.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
