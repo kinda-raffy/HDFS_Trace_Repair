@@ -117,7 +117,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       MetricTimer diskOperationTimer = TimerFactory.getTimer("Disk_Operations");
       diskOperationTimer.start();
       getStripedReader().readMinimumSources(toReconstructLen);
-      diskOperationTimer.stop("Read data from helper-nodes at recovery-node for reconstruction\t"+ getBlockGroup().getBlockId());
+      diskOperationTimer.stop("Read from striped read buffer\t" + getBlockGroup().getBlockId());
       // ourTestLogger.write("Read " + toReconstructLen + " bytes from " +
       //     getStripedReader().getMinRequiredSources() + " sources. Total bytes read: "
       //     + bytesToRead + " out of " + getMaxTargetLength() + " bytes");
