@@ -88,5 +88,6 @@ public class MetricTimer implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
+        logFileWriter.flush();
     }
 }
