@@ -78,7 +78,8 @@ public class MetricTimer implements AutoCloseable {
 
     private void writeLog(String label, long duration, long durationWL) {
         try {
-            logFileWriter.write(String.format("%d\tcpu(ns)\t%d\twall(ms)\t%s\n", duration, durationWL, label));
+            // label, cpu time, wall time
+            logFileWriter.write(String.format("%s\t%d\t%d\n", label, duration, durationWL));
             logFileWriter.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
