@@ -614,7 +614,7 @@ class BlockSender implements java.io.Closeable {
         verifyChecksum(buf, dataOff, dataLen, numChunks, checksumOff);
       }
     }
-    diskOperationTimer.stop("Read data\t" + block.getBlockId());
+    diskOperationTimer.stop(block.getBlockId() + "");
     // Add a new buffer which is an expensive operation.
     // Compute trace (optimising buffering involved).
     try {

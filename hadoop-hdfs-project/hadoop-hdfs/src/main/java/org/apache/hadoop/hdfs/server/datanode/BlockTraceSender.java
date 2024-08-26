@@ -596,7 +596,7 @@ class BlockTraceSender implements java.io.Closeable {
         MetricTimer diskOperationTimer = TimerFactory.getTimer("Disk_Operations");
         diskOperationTimer.start();
         replicaInputStreams.readDataFully(encoderInput, 0, dataLen);
-        diskOperationTimer.stop("Read data at helper-node " + helperNodeIndex + " before computing traces");
+        diskOperationTimer.stop(block.getBlockId() + "");
         byte[] encoderOutput = repairTraceGeneration(helperNodeIndex, lostNodeIndex, encoderInput, dataLen);
         // byte[] encoderOutput = new byte[(int) Math.ceil((double) nodeTrace.length / 8)];
         // compressTrace(nodeTrace, encoderOutput);
@@ -714,7 +714,7 @@ class BlockTraceSender implements java.io.Closeable {
         }
         byte[] compressedRepairTrace = new byte[(int) (encodeLength * (bw / 8.0))];
         compressTrace(repairTrace, compressedRepairTrace);
-        helperTraceTimer.stop("Block:\t" + block.getBlockId() + "\tAt:\t" + datanode.getDatanodeId().getXferAddr() + "\tBW:\t" + bw);
+        helperTraceTimer.stop("Block:\t" + block.getBlockId() + "\tAt:\t" + datanode.getDatanodeId().getXferAddr() + "\tBW:\t" + bw + '\t' + inputs.length);
         ourTestLogger.write("Trace Generation at HelperNode: " + nodeIndex + " with erased node: " + erasedNodeIndex + " - bw: " + bw);
         return compressedRepairTrace;
     }
