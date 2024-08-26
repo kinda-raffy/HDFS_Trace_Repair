@@ -24,7 +24,6 @@ import org.apache.hadoop.io.erasurecode.ECBlockGroup;
 import org.apache.hadoop.io.erasurecode.ErasureCodeConstants;
 import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
 import org.apache.hadoop.io.erasurecode.rawcoder.RawErasureEncoder;
-import org.apache.hadoop.util.OurECLogger;
 
 /**
  * Trace-Repair erasure encoder that encodes a block group.
@@ -34,7 +33,6 @@ import org.apache.hadoop.util.OurECLogger;
 @InterfaceAudience.Private
 public class TRErasureEncoder extends ErasureEncoder {
     private RawErasureEncoder rawEncoder;
-    private static OurECLogger ourlog = OurECLogger.getInstance();
 
     public TRErasureEncoder(ErasureCoderOptions options) {
         super(options);
@@ -46,7 +44,6 @@ public class TRErasureEncoder extends ErasureEncoder {
         RawErasureEncoder rawEncoder = checkCreateTRRawEncoder();
 
         ECBlock[] inputBlocks = getInputBlocks(blockGroup);
-        ourlog.write("Inside TRErasureEncoder: prepared input block groups for the encoding step");
         return new ErasureEncodingStep(
             inputBlocks,
             getOutputBlocks(blockGroup),

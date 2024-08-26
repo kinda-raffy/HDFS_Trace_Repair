@@ -75,7 +75,6 @@ import org.apache.hadoop.hdfs.protocol.datatransfer.sasl.DataTransferSaslUtil;
 import org.apache.hadoop.hdfs.server.common.Util;
 import org.apache.hadoop.security.SaslPropertiesResolver;
 import org.apache.hadoop.util.Preconditions;
-import org.apache.hadoop.util.OurECLogger;
 
 import java.util.concurrent.TimeUnit;
 
@@ -140,7 +139,6 @@ public class DNConf {
   private final int volsConfigured;
   private final int maxDataLength;
   private Configurable dn;
-  private OurECLogger ourECLogger = OurECLogger.getInstance();
 
   public DNConf(final Configurable dn) {
     this.dn = dn;

@@ -51,7 +51,6 @@ import java.util.concurrent.Future;
  */
 @InterfaceAudience.Private
 class StripedReader {
-  private static OurECLogger ourECLogger = OurECLogger.getInstance();
   private static final Logger LOG = DataNode.LOG;
 
   private final int stripedReadTimeoutInMills;
@@ -288,8 +287,6 @@ class StripedReader {
     // the reading length should not exceed the length for reconstruction
     long blockLen = reconstructor.getBlockLen(index);
     long remaining = blockLen - reconstructor.getPositionInBlock();
-    ourECLogger.write(this, datanode.getDatanodeUuid(), "getReadLength - index: " + index + " - blockLen: " +
-            blockLen + " - remaining: " + remaining + " - reconstructLength: " + reconstructLength);
     return (int) Math.min(remaining, reconstructLength);
   }
 
@@ -380,8 +377,6 @@ class StripedReader {
      * Read from minimum source DNs required, the success list contains
      * source DNs which we think best.
      */
-    ourECLogger.write(this, datanode.getDatanodeUuid(), "successList: " + Arrays.toString(successList));
-    ourECLogger.write(this, datanode.getDatanodeUuid(), "liveIndices: " + Arrays.toString(liveIndices));
 
     DatanodeID datanodeID = null;
     
@@ -396,7 +391,6 @@ class StripedReader {
 
       int toRead = getReadLength(liveIndices[successList[i]],
           reconstructLength);
-      ourECLogger.write(this, datanode.getDatanodeUuid(), "toRead: " + toRead + " - liveIndex: " + liveIndices[successList[i]]);
       inboundTrafficTimer.mark("Block\t" + reconstructor.getBlockGroup().getBlockId() + "\tSource:\t" + datanodeID.getXferAddr() + "\tLength\t" + toRead);
       if (toRead > 0) {
         Callable<BlockReadStats> readCallable =
@@ -411,8 +405,6 @@ class StripedReader {
       }
       usedFlag.set(successList[i]);
     }
-    ourECLogger.write(this, datanode.getDatanodeUuid(), "nSuccess: " + nSuccess + " - newSuccess: " + Arrays.toString(newSuccess));
-    ourECLogger.write(this, datanode.getDatanodeUuid(), "futures size: " + futures.keySet().size() + " - futures: " + futures);
 
     while (!futures.isEmpty()) {
       try {
@@ -420,8 +412,6 @@ class StripedReader {
             StripedBlockUtil.getNextCompletedStripedRead(
                 readService, futures, stripedReadTimeoutInMills);
         int resultIndex = -1;
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "result index: " + result.index + " - state: " + result.state);
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "nSuccess: " + nSuccess + "newSuccess: " + Arrays.toString(newSuccess));
 
         if (result.state == StripingChunkReadResult.SUCCESSFUL) {
           resultIndex = result.index;
@@ -430,19 +420,14 @@ class StripedReader {
           // and schedule read from another source DN.
           StripedBlockReader failedReader = readers.get(result.index);
           failedReader.closeBlockReader();
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "closeBlockReader 1: " + result.index);
 
           resultIndex = scheduleNewRead(usedFlag,
               reconstructLength, corruptedBlocks);
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "closeBlockReader 2: " + resultIndex);
 
         } else if (result.state == StripingChunkReadResult.TIMEOUT) {
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "timeout 1: " + result.index);
-
           // If timeout, we also schedule a new read.
           resultIndex = scheduleNewRead(usedFlag,
               reconstructLength, corruptedBlocks);
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "timeout 1: " + resultIndex);
 
         }
         if (resultIndex >= 0) {
@@ -455,7 +440,6 @@ class StripedReader {
             break;
           }
         }
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "nSuccess: " + nSuccess + "newSuccess: " + Arrays.toString(newSuccess));
 
       } catch (InterruptedException e) {
         LOG.info("Read data interrupted.", e);
@@ -464,7 +448,6 @@ class StripedReader {
         break;
       }
     }
-    ourECLogger.write(this, datanode.getDatanodeUuid(), "complete - nSuccess / minRequiredSources: " + nSuccess + "/" + minRequiredSources);
     if (nSuccess < minRequiredSources) {
       String error = "Can't read data from minimum number of sources "
           + "required by reconstruction, block id: " +
@@ -524,7 +507,6 @@ class StripedReader {
         if (toRead > 0) {
           stripedReader.closeBlockReader();
           stripedReader.resetBlockReader(reconstructor.getPositionInBlock());
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "scheduleNewRead- close StripedReader");
           if (stripedReader.getBlockReader() != null) {
             // [TODO] Index is ignored.
             stripedReader.getReadBuffer().position(0);
@@ -574,8 +556,6 @@ class StripedReader {
   }
 
   void close() {
-    ourECLogger.write(this, datanode.getDatanodeUuid(), "close all BlockReader: " + readers);
-
     if (zeroStripeBuffers != null) {
       for (ByteBuffer zeroStripeBuffer : zeroStripeBuffers) {
         reconstructor.freeBuffer(zeroStripeBuffer);

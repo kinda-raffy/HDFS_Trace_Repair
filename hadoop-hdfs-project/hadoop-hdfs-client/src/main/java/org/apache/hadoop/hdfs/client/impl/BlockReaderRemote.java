@@ -55,7 +55,6 @@ import org.apache.hadoop.classification.VisibleForTesting;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.hadoop.util.OurECLogger;
 import org.apache.hadoop.util.TimerFactory;
 
 import static org.apache.hadoop.hdfs.client.HdfsClientConfigKeys.DFS_CLIENT_BLOCK_READER_REMOTE_BUFFER_SIZE_DEFAULT;
@@ -91,7 +90,6 @@ import static org.apache.hadoop.hdfs.client.HdfsClientConfigKeys.DFS_CLIENT_BLOC
 public class BlockReaderRemote implements BlockReader {
 
   static final Logger LOG = LoggerFactory.getLogger(BlockReaderRemote.class);
-  private static OurECLogger ourlog = OurECLogger.getInstance();
 
   static final int TCP_WINDOW_SIZE = 128 * 1024; // 128 KB;
 
@@ -236,7 +234,6 @@ public class BlockReaderRemote implements BlockReader {
     // If we've now satisfied the whole client read, read one last packet
     // header, which should be empty
     if (bytesNeededToFinish <= 0) {
-      ourlog.write("\n Reading the one last trailing empty packet...This finishes the whole client read.");
       readTrailingEmptyPacket();
       if (verifyChecksum) {
         blockReadTimer.mark("Block Read\t" + blockId);

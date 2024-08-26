@@ -24,7 +24,6 @@ import org.apache.hadoop.io.erasurecode.ECBlockGroup;
 import org.apache.hadoop.io.erasurecode.ErasureCodeConstants;
 import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
 import org.apache.hadoop.io.erasurecode.rawcoder.RawErasureDecoder;
-import org.apache.hadoop.util.OurECLogger;
 
 /**
  * Reed-Solomon erasure decoder that decodes a block group.
@@ -34,7 +33,6 @@ import org.apache.hadoop.util.OurECLogger;
 @InterfaceAudience.Private
 public class RSErasureDecoder extends ErasureDecoder {
   private RawErasureDecoder rsRawDecoder;
-  private static OurECLogger ourlog = OurECLogger.getInstance();
 
   public RSErasureDecoder(ErasureCoderOptions options) {
     super(options);

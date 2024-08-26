@@ -32,7 +32,6 @@ import org.apache.hadoop.io.erasurecode.ECChunk;
 import org.apache.hadoop.io.erasurecode.rawcoder.RawErasureDecoder;
 import org.apache.hadoop.hdfs.DFSUtilClient.CorruptedBlocks;
 import org.apache.hadoop.util.Time;
-import org.apache.hadoop.util.OurECLogger;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -51,8 +50,6 @@ import java.util.concurrent.Future;
  * stripes with cellSize width.
  */
 abstract class StripeReader {
-  private static OurECLogger ourlog = OurECLogger.getInstance();
-
   static class ReaderRetryPolicy {
     private int fetchEncryptionKeyTimes = 1;
     private int fetchTokenTimes = 1;
@@ -343,7 +340,6 @@ abstract class StripeReader {
     // the full stripe and one more parity block.
     if (alignedStripe.missingChunksNum > 0) {
       checkMissingBlocks();
-      ourlog.write("\n Inside StripeReader: there are missing block locations, data needs to be read for decode");
       readDataForDecoding();
       // read parity chunks
       readParityChunks(alignedStripe.missingChunksNum);

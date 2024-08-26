@@ -59,7 +59,6 @@ import org.apache.hadoop.classification.VisibleForTesting;
 import org.apache.hadoop.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.hadoop.util.OurECLogger;
 import org.apache.hadoop.util.TimerFactory;
 
 /**
@@ -92,7 +91,6 @@ import org.apache.hadoop.util.TimerFactory;
 public class BlockTraceReaderRemote implements BlockReader {
 
     static final Logger LOG = LoggerFactory.getLogger(BlockTraceReaderRemote.class);
-    private static OurECLogger ourECLogger = OurECLogger.getInstance();
     static final int TCP_WINDOW_SIZE = 128 * 1024; // 128 KB;
 
     final private Peer peer;
@@ -148,8 +146,6 @@ public class BlockTraceReaderRemote implements BlockReader {
         UUID randomId = (LOG.isTraceEnabled() ? UUID.randomUUID() : null);
         LOG.trace("Starting read #{} file {} from datanode {}",
                 randomId, filename, datanodeID.getHostName());
-        ourECLogger.write(this, datanodeID.getDatanodeUuid(), "Starting read #" + randomId + " file " + filename +
-                " from datanode: " + datanodeID.getHostName() + " bytesNeededToFinish: " + bytesNeededToFinish);
         if (curDataSlice == null ||
                 curDataSlice.remaining() == 0 && bytesNeededToFinish > 0) {
             try (TraceScope ignored = tracer.newScope(
@@ -196,16 +192,13 @@ public class BlockTraceReaderRemote implements BlockReader {
     }
 
     private void readNextPacket() throws IOException {
-//        ourECLogger.write(this, datanodeID.getDatanodeUuid(), "start readNextPacket");
         //Read packet headers.
         packetReceiver.receiveNextPacket(in);
 
         PacketHeader curHeader = packetReceiver.getHeader();
-//        ourECLogger.write(this, datanodeID.getDatanodeUuid(), "readNextPacket - currHeader - seqNo: " + curHeader.getSeqno() + " - dataLen: " + curHeader.getDataLen());
 
         curDataSlice = packetReceiver.getDataSlice();
 
-//        ourECLogger.write(this, datanodeID.getDatanodeUuid(), " readNextPacket - after reslicing - dataSlice capacity: " + curDataSlice.capacity());
         assert curDataSlice.capacity() == curHeader.getDataLen();
 
         LOG.trace("DFSClient readNextPacket got header {}", curHeader);
@@ -245,11 +238,9 @@ public class BlockTraceReaderRemote implements BlockReader {
             int newPos = (int) (startOffset - curHeader.getOffsetInBlock());
             curDataSlice.position(newPos);
         }
-//        ourECLogger.write(this, datanodeID.getDatanodeUuid(), "finish 1 packet - bytesNeededToFinish: " + bytesNeededToFinish);
         // If we've now satisfied the whole client read, read one last packet
         // header, which should be empty
         if (bytesNeededToFinish <= 0) {
-//            ourECLogger.write(this, datanodeID.getDatanodeUuid(), "bytesNeededToFinish is 0 - readTrailingEmptyPacket");
             readTrailingEmptyPacket();
             if (verifyChecksum) {
                 sendReadResult(Status.CHECKSUM_OK);
@@ -308,7 +299,6 @@ public class BlockTraceReaderRemote implements BlockReader {
         this.datanodeID = datanodeID;
         this.in = peer.getInputStreamChannel();
         this.checksum = checksum;
-        ourECLogger.write(this, datanodeID.getDatanodeUuid(), "readData: " + file + " - bytesToRead: " + bytesToRead);
         packetReceiver.datanodeUUID = datanodeID.getDatanodeUuid();
 
         //this.checksum.getChecksumType()
@@ -321,7 +311,6 @@ public class BlockTraceReaderRemote implements BlockReader {
         this.erasedNodeIndex = erasedNodeIndex;
         this.helperNodeIndex = helperNodeIndex;
 
-        ourECLogger.write(this, datanodeID.getDatanodeUuid(), "erasedNodeIndex: " + erasedNodeIndex + " - helperNodeIndex: " + helperNodeIndex);
 
         // The total number of bytes that we need to transfer from the DN is
         // the amount that the user wants (bytesToRead), plus the padding at
@@ -337,9 +326,7 @@ public class BlockTraceReaderRemote implements BlockReader {
         int ONE_BYTE = 8; // 8 bits;
         long bytesToReceive = bytesToRead * traceBandwidth / ONE_BYTE;
         this.bytesNeededToFinish = bytesToReceive + (startOffset - firstChunkOffset);
-        ourECLogger.write(this, datanodeID.getDatanodeUuid(), "bytesToRead: " + bytesToRead + " - " + bytesNeededToFinish);
 
-        ourECLogger.write(this, datanodeID.getDatanodeUuid(), "initial bytesNeededToFinish: " + bytesNeededToFinish);
         bytesPerChecksum = this.checksum.getBytesPerChecksum();
         checksumSize = this.checksum.getChecksumSize();
 //        ourlog.write("In BlockTraceReaderRemote cosntructor, bytesPerChecksum: "+bytesPerChecksum);
@@ -351,7 +338,6 @@ public class BlockTraceReaderRemote implements BlockReader {
 
     @Override
     public synchronized void close() throws IOException {
-        ourECLogger.write(this, datanodeID.getDatanodeUuid(), "close");
 
         packetReceiver.close();
         startOffset = -1;

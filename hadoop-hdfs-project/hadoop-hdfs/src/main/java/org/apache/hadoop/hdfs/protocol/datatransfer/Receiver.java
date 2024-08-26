@@ -51,7 +51,6 @@ import org.apache.hadoop.tracing.TraceScope;
 import org.apache.hadoop.tracing.Tracer;
 import org.apache.hadoop.tracing.TraceUtils;
 import org.apache.hadoop.thirdparty.protobuf.ByteString;
-import org.apache.hadoop.util.OurECLogger;
 
 /** Receiver */
 @InterfaceAudience.Private
@@ -158,8 +157,6 @@ public abstract class Receiver implements DataTransferProtocol {
     OpReadBlockTraceProto proto = OpReadBlockTraceProto.parseFrom(vintPrefixed(in));
     TraceScope traceScope = continueTraceSpan(proto.getHeader(),
             proto.getClass().getSimpleName());
-    OurECLogger ourECLogger = OurECLogger.getInstance();
-    ourECLogger.write(this, "Receiver.java", proto.getLostBlockIndex() + " proto length: " + proto.getLen());
     
     this.erasedBlockId = proto.getHeader().getBaseHeader().getTraceInfo().getTraceId();
     try {

@@ -60,7 +60,6 @@ import org.apache.hadoop.classification.VisibleForTesting;
 import org.apache.hadoop.util.Preconditions;
 import org.apache.hadoop.util.TimerFactory;
 import org.slf4j.Logger;
-import org.apache.hadoop.util.OurECLogger;
 
 /**
  * Reads a block from the disk and sends it to a recipient.
@@ -179,7 +178,6 @@ class BlockSender implements java.io.Closeable {
    * See {{@link BlockSender#isLongRead()}
    */
   private static final long LONG_READ_THRESHOLD_BYTES = 256 * 1024;
-  private static OurECLogger ourlog = OurECLogger.getInstance();
 
   // The number of bytes per checksum here determines the alignment
   // of reads: we always start reading at a checksum chunk boundary,
@@ -223,7 +221,6 @@ class BlockSender implements java.io.Closeable {
       this.corruptChecksumOk = corruptChecksumOk;
       this.verifyChecksum = verifyChecksum;
       this.clientTraceFmt = clientTraceFmt;
-      ourlog.write(this, datanode.getDatanodeUuid(), "init");
 
       /*
        * If the client asked for the cache to be dropped behind all reads,
@@ -389,7 +386,6 @@ class BlockSender implements java.io.Closeable {
       chunkSize = size;
       checksum = csum;
       checksumSize = checksum.getChecksumSize();
-      ourlog.write(this, datanode.getDatanodeUuid(), "chunkSize: " + chunkSize + " - checksumSize: " + checksumSize);
 
       length = length < 0 ? replicaVisibleLength : length;
 
@@ -640,8 +636,6 @@ class BlockSender implements java.io.Closeable {
         outboundTimer.mark("Block:\t" + block.getBlockId() + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength\t" + (dataOff - headerOff));
       }
     } catch (IOException e) {
-      String exceptionMessage = "sendPacketError: " + e.getMessage();
-      ourlog.write(this, datanode.getDatanodeUuid(), exceptionMessage);
       if (e instanceof SocketTimeoutException) {
         /*
          * writing to client timed out.  This happens if the client reads
@@ -777,7 +771,6 @@ class BlockSender implements java.io.Closeable {
                  DataTransferThrottler throttler) throws IOException {
     final TraceScope scope = FsTracer.get(null)
         .newScope("sendBlock_" + block.getBlockId());
-    ourlog.write(this, datanode.getDatanodeUuid(), "sendBlock");
 
     try {
       return doSendBlock(out, baseStream, throttler);
@@ -847,18 +840,13 @@ class BlockSender implements java.io.Closeable {
               throttler);
           out.flush();
         } catch (IOException e) { //socket error
-          String ioeMessage = "sendPacketError: " + e.getMessage();
-          ourlog.write(this, datanode.getDatanodeUuid(), ioeMessage);
           throw ioeToSocketException(e);
         }
 
         sentEntireByteRange = true;
       }
     } catch(Exception ex) {
-      String ioeMessage = "sendPacketError: " + ex.getMessage();
-      ourlog.write(this, datanode.getDatanodeUuid(), ioeMessage);
     } finally {
-      ourlog.write(this, datanode.getDatanodeUuid(),"doSendBlock done - totalRead: " + totalRead);
 
       if ((clientTraceFmt != null) && CLIENT_TRACE_LOG.isDebugEnabled()) {
         final long endTime = System.nanoTime();

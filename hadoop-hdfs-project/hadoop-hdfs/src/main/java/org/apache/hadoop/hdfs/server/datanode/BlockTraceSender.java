@@ -116,7 +116,6 @@ class BlockTraceSender implements java.io.Closeable {
     // [FIXME] Get rid of duplicated code.
 
     static final Logger LOG = DataNode.LOG;
-    private static final OurECLogger ourlog = OurECLogger.getInstance();
 
     // [TODO] Verify this checksum is correct.
     // The number of bytes per checksum here determines the alignment
@@ -259,8 +258,6 @@ class BlockTraceSender implements java.io.Closeable {
             this.helperNodeIndex = helperNodeIndex;
             this.length = length;
             double lengthInMb = length / (1024.0 * 1024.0);
-            ourlog.write(this, datanode.getDatanodeUuid(), " init block trace sender - lostNodeIndex: " + lostNodeIndex +
-                    " - helperNodeIndex: " + helperNodeIndex + " " + lengthInMb);
             /*
              * If the client asked for the cache to be dropped behind all reads,
              * we honor that.  Otherwise, we use the DataNode defaults.
@@ -479,7 +476,6 @@ class BlockTraceSender implements java.io.Closeable {
                    DataTransferThrottler throttler) throws IOException {
         final TraceScope scope = datanode.getTracer().
                 newScope("sendBlockTrace_" + block.getBlockId());
-        ourlog.write(this, datanode.getDatanodeUuid(), "sendBlock");
 
 
         try {
@@ -536,32 +532,17 @@ class BlockTraceSender implements java.io.Closeable {
             // If this thread was interrupted, then it did not send the full block.
             if (!Thread.currentThread().isInterrupted()) {
                 try {
-                    ourlog.write(this, datanode.getDatanodeUuid(), "send an empty packet to mark end of the block");
                     // send an empty packet to mark the end of the block
                     sendPacketTraceReader(pktBuf, maxChunksPerPacket, out, false,
                             throttler);
                     out.flush();
                 } catch (IOException e) { //socket error
-                    String ioeMessage = "doSendBlock - send empty packet error: " + e.getMessage();
-                    ourlog.write(this, datanode.getDatanodeUuid(), ioeMessage);
                     throw ioeToSocketException(e);
                 }
 
                 sentEntireByteRange = true;
-                ourlog.write(this, datanode.getDatanodeUuid(), "didSentEntireByteRange");
             }
         } catch(Exception ex) {
-            if (ex.getMessage() != null) {
-                String ioeMessage = "doSendBlock - error in while loop sending packet: " + ex.getMessage();
-                ourlog.write(this, datanode.getDatanodeUuid(), ioeMessage);
-            } else {
-                StackTraceElement[] stackTraceElements = ex.getStackTrace();
-                ourlog.write(this, datanode.getDatanodeUuid(), "stackTraceElements");
-                for(StackTraceElement element: stackTraceElements) {
-                    ourlog.write(this, datanode.getDatanodeUuid(), "element: " + element);
-                }
-
-            }
         } finally {
             if ((clientTraceFmt != null) && ClientTraceLog.isDebugEnabled()) {
                 final long endTime = System.nanoTime();
@@ -625,10 +606,8 @@ class BlockTraceSender implements java.io.Closeable {
             // len - the number of bytes to write.
             out.write(buf, headerOffset, encoderOutput.length + headerLength);
             outboundTimer.mark("Block:\t" + block.getBlockId() + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength:\t" + (encoderOutput.length) + "\tBandwith:" + bw);
-            ourlog.write(this, datanode.getDatanodeHostname(), "Send data from node: " + helperNodeIndex + " with lost node: " + lostNodeIndex + " of data length: " + encoderOutput.length);
         } catch (IOException e) {
             String exceptionMessage = "sendPacketMethod - Error: " + e.getMessage();
-            ourlog.write(this, datanode.getDatanodeUuid(), exceptionMessage);
             //noinspection StatementWithEmptyBody
             if (e instanceof SocketTimeoutException) {
                 /*

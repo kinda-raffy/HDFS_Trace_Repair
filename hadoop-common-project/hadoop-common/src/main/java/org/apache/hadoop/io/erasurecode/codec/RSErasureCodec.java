@@ -24,15 +24,12 @@ import org.apache.hadoop.io.erasurecode.coder.ErasureDecoder;
 import org.apache.hadoop.io.erasurecode.coder.ErasureEncoder;
 import org.apache.hadoop.io.erasurecode.coder.RSErasureDecoder;
 import org.apache.hadoop.io.erasurecode.coder.RSErasureEncoder;
-import org.apache.hadoop.util.OurECLogger;
-
 
 /**
  * A Reed-Solomon erasure codec.
  */
 @InterfaceAudience.Private
 public class RSErasureCodec extends ErasureCodec {
-  private static final OurECLogger ourlog = OurECLogger.getInstance();
 
   public RSErasureCodec(Configuration conf, ErasureCodecOptions options) {
     super(conf, options);
@@ -40,13 +37,11 @@ public class RSErasureCodec extends ErasureCodec {
 
   @Override
   public ErasureEncoder createEncoder() {
-    ourlog.write("\n Inside RSErasureCodec: RSEncoder created...");
     return new RSErasureEncoder(getCoderOptions());
   }
 
   @Override
   public ErasureDecoder createDecoder() {
-    ourlog.write("\n Inside RSErasureCodec: RSDecoder created...");
     return new RSErasureDecoder(getCoderOptions());
   }
 }

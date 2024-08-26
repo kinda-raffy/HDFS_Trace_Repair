@@ -20,7 +20,6 @@ package org.apache.hadoop.io.erasurecode.rawcoder;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.io.erasurecode.ECChunk;
 import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
-import org.apache.hadoop.util.OurECLogger;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.Nullable;
@@ -47,7 +46,6 @@ import java.nio.ByteBuffer;
 public abstract class RawErasureEncoder {
 
   private final ErasureCoderOptions coderOptions;
-  protected static OurECLogger ourLog = OurECLogger.getInstance();
 
   public RawErasureEncoder(ErasureCoderOptions coderOptions) {
     this.coderOptions = coderOptions;

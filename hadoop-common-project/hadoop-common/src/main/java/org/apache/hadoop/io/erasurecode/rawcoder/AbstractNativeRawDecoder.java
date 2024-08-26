@@ -22,7 +22,6 @@ import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
 import org.apache.hadoop.util.PerformanceAdvisory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.hadoop.util.OurECLogger;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,7 +34,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 abstract class AbstractNativeRawDecoder extends RawErasureDecoder {
   public static Logger LOG =
       LoggerFactory.getLogger(AbstractNativeRawDecoder.class);
-  private static OurECLogger ourlog = OurECLogger.getInstance();
 
   // Protect ISA-L coder data structure in native layer from being accessed and
   // updated concurrently by the init, release and decode functions.
@@ -49,7 +47,6 @@ abstract class AbstractNativeRawDecoder extends RawErasureDecoder {
   @Override
   protected void doDecode(ByteBufferDecodingState decodingState)
       throws IOException {
-    ourlog.write("\n Inside AbstractNativeRawDecoder: doDecode call for decoding ByteBuffer");
     decoderLock.readLock().lock();
     try {
       if (nativeCoder == 0) {
@@ -91,7 +88,6 @@ abstract class AbstractNativeRawDecoder extends RawErasureDecoder {
       throws IOException {
     PerformanceAdvisory.LOG.debug("convertToByteBufferState is invoked, " +
         "not efficiently. Please use direct ByteBuffer inputs/outputs");
-    ourlog.write("\n Inside AbstractNativeRawDecoder: doDecode call for decoding ByteArray");
 
     ByteBufferDecodingState bbdState = decodingState.convertToByteBufferState();
     doDecode(bbdState);

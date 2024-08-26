@@ -35,7 +35,6 @@ import org.apache.hadoop.util.Preconditions;
 import org.apache.hadoop.thirdparty.com.google.common.primitives.Ints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.hadoop.util.OurECLogger;
 
 /**
  * Class to handle reading packets one-at-a-time from the wire.
@@ -52,7 +51,6 @@ public class PacketReceiver implements Closeable {
   public static final int MAX_PACKET_SIZE;
 
   static final Logger LOG = LoggerFactory.getLogger(PacketReceiver.class);
-  private static OurECLogger ourlog = OurECLogger.getInstance();
 
   private static final DirectBufferPool bufferPool = new DirectBufferPool();
   private final boolean useDirectBuffers;
@@ -238,7 +236,6 @@ public class PacketReceiver implements Closeable {
       com.google.common.base.Preconditions.checkState(!buf.isDirect(),
               "Must not use direct buffers with InputStream API");
       if (datanodeUUID != null && !datanodeUUID.equals("")) {
-        ourlog.write("\n ReadableByteChannel is null, call readFully() in IOUtils");
       }
       IOUtils.readFully(in, buf.array(),
               buf.arrayOffset() + buf.position(),

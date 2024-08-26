@@ -24,7 +24,6 @@ import org.apache.hadoop.io.erasurecode.ECBlockGroup;
 import org.apache.hadoop.io.erasurecode.ErasureCodeConstants;
 import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
 import org.apache.hadoop.io.erasurecode.rawcoder.RawErasureEncoder;
-import org.apache.hadoop.util.OurECLogger;
 
 /**
  * Reed-Solomon erasure encoder that encodes a block group.
@@ -34,7 +33,6 @@ import org.apache.hadoop.util.OurECLogger;
 @InterfaceAudience.Private
 public class RSErasureEncoder extends ErasureEncoder {
   private RawErasureEncoder rawEncoder;
-  private static OurECLogger ourlog = OurECLogger.getInstance();
 
   public RSErasureEncoder(ErasureCoderOptions options) {
     super(options);
@@ -46,7 +44,6 @@ public class RSErasureEncoder extends ErasureEncoder {
     RawErasureEncoder rawEncoder = checkCreateRSRawEncoder();
 
     ECBlock[] inputBlocks = getInputBlocks(blockGroup);
-    ourlog.write("Inside RSErasureEncoder: prepared input block groups for the encoding step");
 
     return new ErasureEncodingStep(inputBlocks,
         getOutputBlocks(blockGroup), rawEncoder);

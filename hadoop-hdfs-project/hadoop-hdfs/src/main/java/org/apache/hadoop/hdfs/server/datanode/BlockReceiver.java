@@ -66,7 +66,6 @@ import static org.apache.hadoop.io.nativeio.NativeIO.POSIX.SYNC_FILE_RANGE_WRITE
 
 import org.apache.hadoop.classification.VisibleForTesting;
 import org.slf4j.Logger;
-import org.apache.hadoop.util.OurECLogger;
 
 /** A class that receives a block and writes to its own disk, meanwhile
  * may copy it to another site. If a throttler is provided,

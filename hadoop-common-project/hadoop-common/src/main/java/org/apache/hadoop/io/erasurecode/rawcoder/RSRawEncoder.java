@@ -22,7 +22,6 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
 import org.apache.hadoop.io.erasurecode.rawcoder.util.DumpUtil;
 import org.apache.hadoop.io.erasurecode.rawcoder.util.RSUtil;
-import org.apache.hadoop.util.OurECLogger;
 
 /**
  * A raw erasure encoder in RS code scheme in pure Java in case native one
@@ -32,7 +31,6 @@ import org.apache.hadoop.util.OurECLogger;
  */
 @InterfaceAudience.Private
 public class RSRawEncoder extends RawErasureEncoder {
-  private static OurECLogger ourlog = OurECLogger.getInstance();
 
   // relevant to schema and won't change during encode calls.
   private byte[] encodeMatrix;

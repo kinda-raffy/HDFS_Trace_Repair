@@ -72,7 +72,6 @@ import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.StopWatch;
 import org.apache.hadoop.util.Time;
 import org.slf4j.Logger;
-import org.apache.hadoop.util.OurECLogger;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -110,7 +109,6 @@ import static org.apache.hadoop.util.Time.monotonicNow;
 class DataXceiver extends Receiver implements Runnable {
   public static final Logger LOG = DataNode.LOG;
   static final Logger CLIENT_TRACE_LOG = DataNode.CLIENT_TRACE_LOG;
-  private OurECLogger ourECLogger = OurECLogger.getInstance();
 
   private Peer peer;
   private final String remoteAddress; // address of remote side
@@ -244,7 +242,6 @@ class DataXceiver extends Receiver implements Runnable {
             smallBufferSize);
         socketOut = saslStreams.out;
       } catch (InvalidMagicNumberException imne) {
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "InvalidMagicNumberException: "+ imne.getMessage());
         if (imne.isHandshake4Encryption()) {
           LOG.info("Failed to read expected encryption handshake from client " +
               "at {}. Perhaps the client " +
@@ -278,18 +275,14 @@ class DataXceiver extends Receiver implements Runnable {
           op = readOp();
         } catch (InterruptedIOException ignored) {
           // Time out while we wait for client rpc
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "timeout InterruptedIOException: "+ ignored.getMessage());
           break;
         } catch (EOFException | ClosedChannelException e) {
           // Since we optimistically expect the next op, it's quite normal to
           // get EOF here.
           LOG.debug("Cached {} closing after {} ops.  " +
               "This message is usually benign.", peer, opsProcessed);
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "Cached " + peer + " closing after {} ops.  " + opsProcessed +
-                  "This message is usually benign.");
           break;
         } catch (IOException err) {
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "IOException: " + err.getMessage());
           incrDatanodeNetworkErrors();
           throw err;
         }
@@ -308,7 +301,6 @@ class DataXceiver extends Receiver implements Runnable {
       String s = datanode.getDisplayName() + ":DataXceiver error processing "
           + ((op == null) ? "unknown" : op.name()) + " operation "
           + " src: " + remoteAddress + " dst: " + localAddress;
-      ourECLogger.write(this, datanode.getDatanodeUuid(), "Throwable: " + s + " - message: " + t.getMessage());
 
       if (op == Op.WRITE_BLOCK && t instanceof ReplicaAlreadyExistsException) {
         // For WRITE_BLOCK, it is okay if the replica already exists since
@@ -339,7 +331,6 @@ class DataXceiver extends Receiver implements Runnable {
           }
       } else if (t instanceof InvalidToken ||
           t.getCause() instanceof InvalidToken) {
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "InvalidToken: " + t.getMessage());
         // The InvalidToken exception has already been logged in
         // checkAccess() method and this is not a server error.
         LOG.trace(s, t);
@@ -621,7 +612,6 @@ class DataXceiver extends Receiver implements Runnable {
             cachingStrategy);
       } catch(IOException e) {
         String msg = "opReadBlock " + block + " received exception " + e;
-        ourECLogger.write(this, datanode.getDatanodeUuid(), msg);
         LOG.info(msg);
         sendResponse(ERROR, msg);
         throw e;
@@ -635,19 +625,16 @@ class DataXceiver extends Receiver implements Runnable {
       read = blockSender.sendBlock(out, baseStream, dataXceiverServer.getReadThrottler());
       long duration = Time.monotonicNow() - beginRead;
       if (blockSender.didSendEntireByteRange()) {
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "didSendEntireByteRange");
         // If we sent the entire range, then we should expect the client
         // to respond with a Status enum.
         try {
           ClientReadStatusProto stat = ClientReadStatusProto.parseFrom(
               PBHelperClient.vintPrefixed(in));
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "didSendEntireByteRange - stat: " + stat);
 
           if (!stat.hasStatus()) {
             String statErrorMessage = "Client " + peer.getRemoteAddressString() +
                     " did not send a valid status code after reading. " +
                     "Will close connection.";
-            ourECLogger.write(this, datanode.getDatanodeUuid(), statErrorMessage);
 
             LOG.warn("Client {} did not send a valid status code " +
                 "after reading. Will close connection.",
@@ -655,14 +642,12 @@ class DataXceiver extends Receiver implements Runnable {
             IOUtils.closeStream(out);
           }
         } catch (IOException ioe) {
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "Error reading client status response. Will close connection." + ioe.getMessage());
 
           LOG.debug("Error reading client status response. Will close connection.", ioe);
           IOUtils.closeStream(out);
           incrDatanodeNetworkErrors();
         }
       } else {
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "didNotSendEntireByteRange");
         IOUtils.closeStream(out);
       }
       datanode.metrics.incrBytesRead((int) read);
@@ -672,8 +657,6 @@ class DataXceiver extends Receiver implements Runnable {
     } catch ( SocketException ignored ) {
       LOG.trace("{}:Ignoring exception while serving {} to {}",
           dnR, block, remoteAddress, ignored);
-      ourECLogger.write(this, datanode.getDatanodeUuid(), dnR + ":Ignoring exception while serving " + block + " to " +
-              remoteAddress + " - ignored: " + ignored.getMessage());
       // Its ok for remote side to close the connection anytime.
       datanode.metrics.incrBlocksRead();
       IOUtils.closeStream(out);
@@ -681,12 +664,9 @@ class DataXceiver extends Receiver implements Runnable {
       /* What exactly should we do here?
        * Earlier version shutdown() datanode if there is disk error.
        */
-      ourECLogger.write(this, datanode.getDatanodeUuid(), "IOException: " + ioe.getMessage());
       if (!(ioe instanceof SocketTimeoutException)) {
         LOG.warn("{}:Got exception while serving {} to {}",
             dnR, block, remoteAddress, ioe);
-        ourECLogger.write(this, datanode.getDatanodeUuid(), dnR + ":Got exception while serving " + block + " to "
-                + remoteAddress + " - ioe: " + ioe.getMessage());
         incrDatanodeNetworkErrors();
       }
       // Normally the client reports a bad block to the NN. However if the
@@ -717,11 +697,6 @@ class DataXceiver extends Receiver implements Runnable {
                              final int helperNodeIndex,
                              final int dataBlkNum,
                              final int parityBlkNum) throws IOException {
-    // [DEBUG]
-    if (lostBlockIndex != 1) {
-      ourECLogger.write(this, datanode.getDatanodeUuid(), "[DEBUG]lostBlockIndex != 1");
-    }
-
     previousOpClientName = clientName;
     long read = 0;
     updateCurrentThreadName("Sending block trace " + block);
@@ -729,9 +704,6 @@ class DataXceiver extends Receiver implements Runnable {
     DataOutputStream out = getBufferedOutputStream();
     checkAccess(out, true, block, blockToken, Op.READ_TRACE,
             BlockTokenIdentifier.AccessMode.READ);
-
-    ourECLogger.write(this, datanode.getDatanodeUuid(), "before creating blockTraceSender - lostNodeIndex: " +
-            lostBlockIndex + " - helperNodeIndex: " + helperNodeIndex + " - length: " + length);
 
     // send the block
     BlockTraceSender blockTraceSender = null;
@@ -744,14 +716,11 @@ class DataXceiver extends Receiver implements Runnable {
                     dnR + " Served block " + block + " to " + remoteAddress;
     try {
       try {
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "before creating blockTraceSender 2 - lostNodeIndex: " +
-                lostBlockIndex + " - helperNodeIndex: " + helperNodeIndex + " - length: " + length);
         blockTraceSender = new BlockTraceSender(block, erasedBlockId, blockOffset, length,
                 false, false, false, datanode, clientTraceFmt,
                 cachingStrategy, lostBlockIndex, helperNodeIndex, dataBlkNum, parityBlkNum);
       } catch(IOException e) {
         String msg = "opReadBlockTrace " + block + " received exception " + e;
-        ourECLogger.write(this, datanode.getDatanodeUuid(), msg);
         LOG.info(msg);
         sendResponse(ERROR, msg);
         throw e;
@@ -764,32 +733,27 @@ class DataXceiver extends Receiver implements Runnable {
       read = blockTraceSender.sendBlock(out, baseStream, null); // send trace data
       long duration = Time.monotonicNow() - beginRead;
       if (blockTraceSender.didSendEntireByteRange()) {
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "didSendEntireByteRange");
         // If we sent the entire range, then we should expect the client
         // to respond with a Status enum.
         try {
           ClientReadStatusProto stat = ClientReadStatusProto.parseFrom(
                   PBHelperClient.vintPrefixed(in));
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "didSendEntireByteRange - stat: " + stat);
 
           if (!stat.hasStatus()) {
             String warningMessage = "Client " + peer.getRemoteAddressString() +
                     " did not send a valid status code after reading. " +
                     "Will close connection.";
             LOG.warn(warningMessage);
-            ourECLogger.write(this, datanode.getDatanodeUuid(), warningMessage);
             IOUtils.closeStream(out);
           }
         } catch (IOException ioe) {
           String ioExceptionMessage = "Error reading client status response. Will close connection. SocketOut: " + socketOut;
           LOG.debug("Error reading client status response. Will close connection.", ioe);
-          ourECLogger.write(this, datanode.getDatanodeUuid(), ioExceptionMessage);
 
           IOUtils.closeStream(out);
           incrDatanodeNetworkErrors();
         }
       } else {
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "didNotSendEntireByteRange");
         IOUtils.closeStream(out);
       }
       datanode.metrics.incrBytesRead((int) read);
@@ -801,16 +765,12 @@ class DataXceiver extends Receiver implements Runnable {
       long bytesRead = datanode.getMetrics().getecReconstructionBytesRead();
       long reconstructionTasks = datanode.getMetrics().getecReconstructionTasks();
       long readTimeMillis = datanode.getMetrics().getecReconstructionReadTimeMillis();
-
-      ourECLogger.write(this, datanode.getDatanodeUuid(), "bytesRead = " + bytesRead + " - reconstructionTasks: " + reconstructionTasks +
-              " - readTimeMillis: " + readTimeMillis);
     } catch ( SocketException ignored ) {
       if (LOG.isTraceEnabled()) {
         String socketExceptionMessage = dnR + ":Ignoring exception while serving " + block + " to " +
                 remoteAddress + ignored.getMessage();
         LOG.trace(dnR + ":Ignoring exception while serving " + block + " to " +
                 remoteAddress, ignored);
-        ourECLogger.write(this, datanode.getDatanodeUuid(), "socketExceptionMessage: " + socketExceptionMessage);
       }
       // Its ok for remote side to close the connection anytime.
       datanode.metrics.incrBlocksRead();
@@ -824,7 +784,6 @@ class DataXceiver extends Receiver implements Runnable {
                 + remoteAddress, ioe);
         String ioeMessage = ":Got exception while serving " + block + " to "
                 + remoteAddress + ioe;
-        ourECLogger.write(this, datanode.getDatanodeUuid(), ioeMessage);
         incrDatanodeNetworkErrors();
       }
       throw ioe;

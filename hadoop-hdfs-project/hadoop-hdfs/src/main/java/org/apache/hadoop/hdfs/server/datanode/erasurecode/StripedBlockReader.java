@@ -37,7 +37,6 @@ import org.apache.hadoop.hdfs.util.StripedBlockUtil.BlockReadStats;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.token.Token;
-import org.apache.hadoop.util.OurECLogger;
 
 import org.slf4j.Logger;
 
@@ -78,7 +77,6 @@ class StripedBlockReader {
   private int erasedIndex;
   private int dataBlkNum;
   private int parityBlkNum;
-  private OurECLogger ourECLogger = OurECLogger.getInstance();
 
   ExtendedBlock erasedBlock;
 
@@ -223,7 +221,6 @@ class StripedBlockReader {
       public BlockReadStats call() throws Exception {
         try {
           // [TODO] Machine index is ignored.
-          ourECLogger.write(this, datanode.getDatanodeUuid(), "readFromBlock: " + length);
           getReadBuffer().limit(length);
           return actualReadFromBlock();
         } catch (ChecksumException e) {
@@ -247,9 +244,6 @@ class StripedBlockReader {
   private BlockReadStats actualReadFromBlock() throws IOException {
     // [TODO] Clean.
 
-    //    byte[]test = buffer.array();
-    //    ourECLogger.write(this, datanode.getDatanodeUuid(), "index: " + index + " - " +
-    //            Arrays.toString(Arrays.copyOfRange(test, 0, 30)));
     DataNodeFaultInjector.get().delayBlockReader();
     int len = buffer.remaining();
     int n = 0;
@@ -261,10 +255,6 @@ class StripedBlockReader {
       n += nread;
       stripedReader.getReconstructor().incrBytesRead(isLocal, nread);
     }
-    //    byte[]test2 = buffer.array();
-    //    ourECLogger.write(this, datanode.getDatanodeUuid(), "index: " + index + " - " +
-    //            Arrays.toString(Arrays.copyOfRange(test2, 0, 30)));
-    //    ourlog.write("|n In actualReadFromBlock() of StripedBlockReader..after calling read() of BlockReaderRemote.. the buffer content read now is: "+buffer.toString());
 
     return new BlockReadStats(n, blockReader.isShortCircuit(),
         blockReader.getNetworkDistance());

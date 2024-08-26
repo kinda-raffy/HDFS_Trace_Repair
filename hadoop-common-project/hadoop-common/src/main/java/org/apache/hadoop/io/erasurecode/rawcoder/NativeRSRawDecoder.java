@@ -20,7 +20,6 @@ package org.apache.hadoop.io.erasurecode.rawcoder;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.io.erasurecode.ErasureCodeNative;
 import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
-import org.apache.hadoop.util.OurECLogger;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,7 +29,6 @@ import java.nio.ByteBuffer;
  */
 @InterfaceAudience.Private
 public class NativeRSRawDecoder extends AbstractNativeRawDecoder {
-  private static OurECLogger ourlog = OurECLogger.getInstance();
 
   static {
     ErasureCodeNative.checkNativeCodeLoaded();
@@ -51,7 +49,6 @@ public class NativeRSRawDecoder extends AbstractNativeRawDecoder {
   protected void performDecodeImpl(
       ByteBuffer[] inputs, int[] inputOffsets, int dataLen, int[] erased,
       ByteBuffer[] outputs, int[] outputOffsets) throws IOException {
-    ourlog.write("\n Inside NativeRSRawDecoder: to call decoder implementation..");
     decodeImpl(inputs, inputOffsets, dataLen, erased, outputs, outputOffsets);
   }
 

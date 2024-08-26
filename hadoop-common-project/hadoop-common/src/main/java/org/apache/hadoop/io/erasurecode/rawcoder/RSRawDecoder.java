@@ -23,7 +23,6 @@ import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
 import org.apache.hadoop.io.erasurecode.rawcoder.util.DumpUtil;
 import org.apache.hadoop.io.erasurecode.rawcoder.util.GF256;
 import org.apache.hadoop.io.erasurecode.rawcoder.util.RSUtil;
-import org.apache.hadoop.util.OurECLogger;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -36,7 +35,6 @@ import java.util.Arrays;
  */
 @InterfaceAudience.Private
 public class RSRawDecoder extends RawErasureDecoder {
-  private static OurECLogger ourlog = OurECLogger.getInstance();
 
   //relevant to schema and won't change during decode calls
   private byte[] encodeMatrix;
@@ -82,7 +80,6 @@ public class RSRawDecoder extends RawErasureDecoder {
     for (int i = 0; i < getNumDataUnits(); i++) {
       realInputs[i] = decodingState.inputs[validIndexes[i]];
     }
-    ourlog.write("\n Inside RSRawDecoder: calling doDecode ByteBuffer...");
     RSUtil.encodeData(gfTables, realInputs, decodingState.outputs);
   }
 
@@ -146,7 +143,6 @@ public class RSRawDecoder extends RawErasureDecoder {
     int i, j, r, p;
     byte s;
     byte[] tmpMatrix = new byte[getNumAllUnits() * getNumDataUnits()];
-    ourlog.write("\n Inside RSRawDecoder: in generateDecodeMatrix...");
 
     // Construct matrix tmpMatrix by removing error rows
     for (i = 0; i < getNumDataUnits(); i++) {
@@ -165,7 +161,6 @@ public class RSRawDecoder extends RawErasureDecoder {
                 invertMatrix[getNumDataUnits() * erasedIndexes[i] + j];
       }
     }
-    ourlog.write("\n Inside RSRawDecoder: in generateDecodeMatrix, computed gfInvertMatrix...");
 
     for (p = numErasedDataUnits; p < erasedIndexes.length; p++) {
       for (i = 0; i < getNumDataUnits(); i++) {

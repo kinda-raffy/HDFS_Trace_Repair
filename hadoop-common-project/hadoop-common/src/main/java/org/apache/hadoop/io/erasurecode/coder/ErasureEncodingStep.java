@@ -23,7 +23,6 @@ import org.apache.hadoop.io.erasurecode.ECChunk;
 import org.apache.hadoop.io.erasurecode.rawcoder.RawErasureEncoder;
 
 import java.io.IOException;
-import org.apache.hadoop.util.OurECLogger;
 
 
 /**
@@ -35,7 +34,6 @@ public class ErasureEncodingStep implements ErasureCodingStep {
   private ECBlock[] inputBlocks;
   private ECBlock[] outputBlocks;
   private RawErasureEncoder rawEncoder;
-  private static OurECLogger ourlog = OurECLogger.getInstance();
 
   /**
    * The constructor with all the necessary info.
