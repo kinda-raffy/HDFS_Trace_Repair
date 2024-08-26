@@ -65,15 +65,18 @@ class StripedBlockReconstructor extends StripedReconstructor
 
   @Override
   public void run() {
+    MetricTimer recoveryTimer = TimerFactory.getTimer("Block_Reconstruction_Task");
     try {
       initDecoderIfNecessary();
       initDecodingValidatorIfNecessary();
       getStripedReader().init();
       stripedWriter.init();
+      recoveryTimer.mark("Start erasure coding recovery\t");
+      recoveryTimer.start();
       MetricTimer reconstructionTimer = TimerFactory.getTimer("Recovery_Reconstruct");
       reconstructionTimer.start();
       reconstruct();
-      reconstructionTimer.stop("Perform reconstruct operation");
+      reconstructionTimer.stop("Perform reconstruct operation\t" + getBlockGroup().getBlockId());
       ourTestLogger.write("Performing block reconstruction");
       stripedWriter.endTargetBlocks();
       // Currently we don't check the acks for packets, this is similar as
@@ -82,6 +85,8 @@ class StripedBlockReconstructor extends StripedReconstructor
       LOG.warn("Failed to reconstruct striped block: {}", getBlockGroup(), e);
       getDatanode().getMetrics().incrECFailedReconstructionTasks();
     } finally {
+      recoveryTimer.mark("Complete erasure coding recovery\t" + getBlockGroup().getBlockId());
+      recoveryTimer.stop("Complete erasure coding recovery\t" + getBlockGroup().getBlockId());
       float xmitWeight = getErasureCodingWorker().getXmitWeight();
       // if the xmits is smaller than 1, the xmitsSubmitted should be set to 1
       // because if it set to zero, we cannot to measure the xmits submitted
