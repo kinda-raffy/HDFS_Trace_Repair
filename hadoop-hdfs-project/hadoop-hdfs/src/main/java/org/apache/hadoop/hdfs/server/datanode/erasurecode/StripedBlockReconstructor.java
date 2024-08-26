@@ -206,7 +206,16 @@ class StripedBlockReconstructor extends StripedReconstructor
     MetricTimer reconstructionTimer = TimerFactory.getTimer("Recovery_Reconstruct");
     reconstructionTimer.start();
     getDecoder().decode(inputs, erasedIndices, outputs);
-    reconstructionTimer.stop("Decode chunk\t" + bandwidths() + "\t" + getBlockGroup().getBlockId());
+
+    int[] inputs_sizes = new int[inputs.length];
+    for (int i = 0; i < inputs.length; ++i) {
+      if (inputs[i] != null)
+        inputs_sizes[i] = inputs[i].position();
+      else
+        inputs_sizes[i] = 0;
+    }
+    
+    reconstructionTimer.stop("Decode chunk\t" + bandwidths() + "\t" + Arrays.toString(inputs_sizes) + "\t" + getBlockGroup().getBlockId());
     long end = System.nanoTime();
     this.getDatanode().getMetrics().incrECDecodingTime(end - start);
   }
