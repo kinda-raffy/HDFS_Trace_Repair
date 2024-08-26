@@ -637,6 +637,7 @@ class BlockSender implements java.io.Closeable {
       } else {
         // normal transfer
         out.write(buf, headerOff, dataOff + dataLen - headerOff);
+        outboundTimer.mark("Block:\t" + block.getBlockId() + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength\t" + (dataOff - headerOff));
       }
     } catch (IOException e) {
       String exceptionMessage = "sendPacketError: " + e.getMessage();
