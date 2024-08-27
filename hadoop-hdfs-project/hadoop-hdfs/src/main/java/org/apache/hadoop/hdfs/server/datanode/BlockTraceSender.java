@@ -218,10 +218,6 @@ class BlockTraceSender implements java.io.Closeable {
 
     private byte[] preComputedParity = new byte[256];
 
-    MetricTimer outboundTimer = TimerFactory.getTimer("Outbound_Operations");
-
-    long erasedBlockId;
-
     /**
      * Constructor
      *
@@ -235,14 +231,11 @@ class BlockTraceSender implements java.io.Closeable {
      * @param clientTraceFmt format string used to print client trace logs
      * @throws IOException
      */
-    BlockTraceSender(ExtendedBlock block, long erasedBlockId, long startOffset, long length,
+    BlockTraceSender(ExtendedBlock block, long startOffset, long length,
                      boolean corruptChecksumOk, boolean verifyChecksum,
                      boolean sendChecksum, DataNode datanode, String clientTraceFmt,
                      CachingStrategy cachingStrategy, int lostNodeIndex, int helperNodeIndex, int dataBlkNum, int parityBlkNum)
             throws IOException {
-
-        this.erasedBlockId = erasedBlockId;
-
         FsVolumeReference volumeRef;
         InputStream blockIn = null;
         DataInputStream checksumIn = null;
@@ -596,7 +589,6 @@ class BlockTraceSender implements java.io.Closeable {
         packetBuffer.put(encoderOutput, 0, encoderOutput.length);
         // this method returns the byte array that backs this buffer
         byte[] buf = packetBuffer.array(); // the byte array buf copied with the contents of the pkt buffer
-
         byte bw = helperTable.getByte_9_6(helperNodeIndex, lostNodeIndex, 0);
         try {
             // this method writes len bytes from the specified byte array starting at offset off to this output stream.
@@ -605,6 +597,7 @@ class BlockTraceSender implements java.io.Closeable {
             // off - the start offset in the data.
             // len - the number of bytes to write.
             out.write(buf, headerOffset, encoderOutput.length + headerLength);
+            MetricTimer outboundTimer = TimerFactory.getTimer("Outbound_Operations");
             outboundTimer.mark("Block:\t" + block.getBlockId() + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength:\t" + (encoderOutput.length) + "\tBandwith:" + bw);
         } catch (IOException e) {
             String exceptionMessage = "sendPacketMethod - Error: " + e.getMessage();

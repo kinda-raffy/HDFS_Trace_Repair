@@ -422,7 +422,6 @@ public class BlockTraceReaderRemote implements BlockReader {
      */
     public static BlockReader newBlockTraceReader(String file,
                                                   ExtendedBlock block,
-                                                  ExtendedBlock erasedBlock,
                                                   Token<BlockTokenIdentifier> blockToken,
                                                   long startOffset, long len,
                                                   boolean verifyChecksum,
@@ -438,7 +437,7 @@ public class BlockTraceReaderRemote implements BlockReader {
         final DataOutputStream out = new DataOutputStream(new BufferedOutputStream(
                 peer.getOutputStream()));
 //        ourlog.write("Block trace reader creation");
-        new Sender(out).readBlockTrace(block, erasedBlock, blockToken, clientName, startOffset, len,
+        new Sender(out).readBlockTrace(block, blockToken, clientName, startOffset, len,
                 verifyChecksum, cachingStrategy,
                 erasedNodeIndex, helperNodeIndex, dataBlkNum, parityBlkNum);
 

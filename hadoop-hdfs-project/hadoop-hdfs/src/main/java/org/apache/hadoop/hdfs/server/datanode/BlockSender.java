@@ -187,7 +187,6 @@ class BlockSender implements java.io.Closeable {
   private static final long CHUNK_SIZE = 512;
 
   MetricTimer outboundTimer;
-  long erasedBlockId;
 
   private static final String EIO_ERROR = "Input/output error";
   /**
@@ -203,7 +202,7 @@ class BlockSender implements java.io.Closeable {
    * @param clientTraceFmt format string used to print client trace logs
    * @throws IOException
    */
-  BlockSender(ExtendedBlock block, long erasedBlockId, long startOffset, long length,
+  BlockSender(ExtendedBlock block , long startOffset, long length,
               boolean corruptChecksumOk, boolean verifyChecksum,
               boolean sendChecksum, DataNode datanode, String clientTraceFmt,
               CachingStrategy cachingStrategy)
@@ -211,7 +210,6 @@ class BlockSender implements java.io.Closeable {
 
     // outboundTimer = TimerFactory.getTimer("Outbound_Operations_" + id++);
     outboundTimer = TimerFactory.getTimer("Outbound_Operations");
-    this.erasedBlockId = erasedBlockId;
     InputStream blockIn = null;
     DataInputStream checksumIn = null;
     FsVolumeReference volumeRef = null;

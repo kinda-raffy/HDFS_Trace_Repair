@@ -227,7 +227,7 @@ class StripedReader {
     return new StripedBlockReader(this, datanode,
         conf, liveIndices[idxInSources],
         reconstructor.getBlock(liveIndices[idxInSources]),
-        sources[idxInSources], offsetInBlock, reconstructor.getBlockGroup());
+        sources[idxInSources], offsetInBlock);
   }
 
   StripedBlockReader createTRReader(int idxInSources, int helperIndex, long offsetInBlock) {
@@ -235,7 +235,7 @@ class StripedReader {
             conf, liveIndices[idxInSources],
             reconstructor.getBlock(liveIndices[idxInSources]),
             sources[idxInSources], offsetInBlock,
-            isTr, helperIndex, erasedIndex, dataBlkNum, parityBlkNum, reconstructor.getBlockGroup());
+            isTr, helperIndex, erasedIndex, dataBlkNum, parityBlkNum);
   }
 
   private int numberOfChunks(long datalen) {

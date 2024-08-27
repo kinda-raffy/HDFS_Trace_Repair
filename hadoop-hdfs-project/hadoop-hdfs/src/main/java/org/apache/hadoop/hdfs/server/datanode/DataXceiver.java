@@ -607,7 +607,7 @@ class DataXceiver extends Receiver implements Runnable {
 
     try {
       try {
-        blockSender = new BlockSender(block, erasedBlockId, blockOffset, length,
+        blockSender = new BlockSender(block, blockOffset, length,
             true, false, sendChecksum, datanode, clientTraceFmt,
             cachingStrategy);
       } catch(IOException e) {
@@ -715,8 +715,8 @@ class DataXceiver extends Receiver implements Runnable {
                             clientName, "%d", dnR.getDatanodeUuid(), block, "%d") :
                     dnR + " Served block " + block + " to " + remoteAddress;
     try {
-      try {
-        blockTraceSender = new BlockTraceSender(block, erasedBlockId, blockOffset, length,
+      try { 
+        blockTraceSender = new BlockTraceSender(block, blockOffset, length,
                 false, false, false, datanode, clientTraceFmt,
                 cachingStrategy, lostBlockIndex, helperNodeIndex, dataBlkNum, parityBlkNum);
       } catch(IOException e) {
@@ -1239,7 +1239,7 @@ class DataXceiver extends Receiver implements Runnable {
 
     try {
       // check if the block exists or not
-      blockSender = new BlockSender(block, 0, 0, -1, false, false, true, datanode, 
+      blockSender = new BlockSender(block, 0, -1, false, false, true, datanode, 
           null, CachingStrategy.newDropBehind());
 
       OutputStream baseStream = getOutputStream();

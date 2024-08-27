@@ -3060,7 +3060,7 @@ public class DataNode extends ReconfigurableBase
         out = new DataOutputStream(new BufferedOutputStream(unbufOut,
             DFSUtilClient.getSmallBufferSize(getConf())));
         in = new DataInputStream(unbufIn);
-        blockSender = new BlockSender(b, 0, 0, b.getNumBytes(), 
+        blockSender = new BlockSender(b, 0, b.getNumBytes(), 
             false, false, true, DataNode.this, null, cachingStrategy);
         DatanodeInfo srcNode = new DatanodeInfoBuilder().setNodeID(bpReg)
             .build();

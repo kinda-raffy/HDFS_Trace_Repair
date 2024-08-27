@@ -78,11 +78,9 @@ class StripedBlockReader {
   private int dataBlkNum;
   private int parityBlkNum;
 
-  ExtendedBlock erasedBlock;
-
   StripedBlockReader(StripedReader stripedReader, DataNode datanode,
                      Configuration conf, short index, ExtendedBlock block,
-                     DatanodeInfo source, long offsetInBlock, ExtendedBlock erasedBlock) {
+                     DatanodeInfo source, long offsetInBlock) {
     this.stripedReader = stripedReader;
     this.datanode = datanode;
     this.conf = conf;
@@ -91,8 +89,6 @@ class StripedBlockReader {
     this.source = source;
     this.block = block;
     this.isLocal = false;
-
-    this.erasedBlock = erasedBlock;
 
     BlockReader tmpBlockReader = createBlockReader(offsetInBlock);
     if (tmpBlockReader != null) {
@@ -103,12 +99,11 @@ class StripedBlockReader {
   StripedBlockReader(StripedReader stripedReader, DataNode datanode,
                      Configuration conf, short index, ExtendedBlock block,
                      DatanodeInfo source, long offsetInBlock,
-                     boolean isTr, int helperIndex, int erasedIndex, int dataBlkNum, int parityBlkNum, ExtendedBlock erasedBlock) {
+                     boolean isTr, int helperIndex, int erasedIndex, int dataBlkNum, int parityBlkNum) {
     this.stripedReader = stripedReader;
     this.datanode = datanode;
     this.conf = conf;
 
-    this.erasedBlock = erasedBlock;
 
     this.index = index;
     this.source = source;
@@ -171,12 +166,12 @@ class StripedBlockReader {
       // [TODO] Invert this conditional.
       if (!isTr) {
         return BlockReaderRemote.newBlockReader(
-                "dummy", block, erasedBlock, blockToken, offsetInBlock,
+                "dummy", block, blockToken, offsetInBlock,
                 block.getNumBytes() - offsetInBlock, true, "", peer, source,
                 null, stripedReader.getCachingStrategy(), -1, conf);
       } else {
         return BlockTraceReaderRemote.newBlockTraceReader(
-                "dummy", block, erasedBlock, blockToken, offsetInBlock,
+                "dummy", block, blockToken, offsetInBlock,
                 block.getNumBytes() - offsetInBlock, false, "", peer, source,
                 null, stripedReader.getCachingStrategy(), datanode.getTracer(), -1,
                 erasedIndex, helperIndex, dataBlkNum, parityBlkNum);

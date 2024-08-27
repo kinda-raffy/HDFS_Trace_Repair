@@ -83,33 +83,6 @@ public abstract class DataTransferProtoUtil {
       .build();
   }
 
-  static ClientOperationHeaderProto buildClientHeader(ExtendedBlock blk, ExtendedBlock erasedBlk,
-      String client, Token<BlockTokenIdentifier> blockToken) {
-    return ClientOperationHeaderProto.newBuilder()
-      .setBaseHeader(buildBaseHeader(blk, erasedBlk, blockToken))
-      .setClientName(client)
-      .build();
-  }
-
-  static BaseHeaderProto buildBaseHeader(ExtendedBlock blk, ExtendedBlock erasedBlk,
-      Token<BlockTokenIdentifier> blockToken) {
-    BaseHeaderProto.Builder builder =  BaseHeaderProto.newBuilder()
-        .setBlock(PBHelperClient.convert(blk))
-        .setToken(PBHelperClient.convert(blockToken));
-    Span span = Tracer.getCurrentSpan();
-    if (span != null) {
-      DataTransferTraceInfoProto.Builder traceInfoProtoBuilder =
-          DataTransferTraceInfoProto.newBuilder().setSpanContext(
-              TraceUtils.spanContextToByteString(span.getContext()));
-      builder.setTraceInfo(traceInfoProtoBuilder);
-    } else {
-      DataTransferTraceInfoProto.Builder traceInfoProtoBuilder =
-          DataTransferTraceInfoProto.newBuilder().setTraceId(erasedBlk.getBlockId());
-      builder.setTraceInfo(traceInfoProtoBuilder);
-    }
-    return builder.build();
-  }
-
   static BaseHeaderProto buildBaseHeader(ExtendedBlock blk,
       Token<BlockTokenIdentifier> blockToken) {
     BaseHeaderProto.Builder builder =  BaseHeaderProto.newBuilder()
