@@ -186,7 +186,7 @@ class BlockSender implements java.io.Closeable {
   // is likely to result in minimal extra IO.
   private static final long CHUNK_SIZE = 512;
 
-  MetricTimer outboundTimer;
+  
 
   private static final String EIO_ERROR = "Input/output error";
   /**
@@ -207,9 +207,6 @@ class BlockSender implements java.io.Closeable {
               boolean sendChecksum, DataNode datanode, String clientTraceFmt,
               CachingStrategy cachingStrategy)
       throws IOException {
-
-    // outboundTimer = TimerFactory.getTimer("Outbound_Operations_" + id++);
-    outboundTimer = TimerFactory.getTimer("Outbound_Operations");
     InputStream blockIn = null;
     DataInputStream checksumIn = null;
     FsVolumeReference volumeRef = null;
@@ -616,7 +613,6 @@ class BlockSender implements java.io.Closeable {
         SocketOutputStream sockOut = (SocketOutputStream)out;
         // First write header and checksums
         sockOut.write(buf, headerOff, dataOff - headerOff);
-        outboundTimer.mark("Block:\t" + block.getBlockId() + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength\t" + (dataOff - headerOff));
 
         // no need to flush since we know out is not a buffered stream
         FileChannel fileCh = ((FileInputStream)ris.getDataIn()).getChannel();
@@ -631,8 +627,9 @@ class BlockSender implements java.io.Closeable {
       } else {
         // normal transfer
         out.write(buf, headerOff, dataOff + dataLen - headerOff);
-        outboundTimer.mark("Block:\t" + block.getBlockId() + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength\t" + (dataOff - headerOff));
       }
+      MetricTimer outboundTimer = TimerFactory.getTimer("Outbound_Operations");
+      outboundTimer.mark("Block:\t" + block.getBlockId() + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength\t" + (dataOff - headerOff));
     } catch (IOException e) {
       if (e instanceof SocketTimeoutException) {
         /*

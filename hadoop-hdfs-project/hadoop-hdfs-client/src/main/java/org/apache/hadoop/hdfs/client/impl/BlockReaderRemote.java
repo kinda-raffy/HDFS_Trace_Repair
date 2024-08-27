@@ -127,8 +127,6 @@ public class BlockReaderRemote implements BlockReader {
 
   private final int networkDistance;
 
-  MetricTimer blockReadTimer = TimerFactory.getTimer("Block_Read");
-
   @VisibleForTesting
   public Peer getPeer() {
     return peer;
@@ -234,12 +232,12 @@ public class BlockReaderRemote implements BlockReader {
     // If we've now satisfied the whole client read, read one last packet
     // header, which should be empty
     if (bytesNeededToFinish <= 0) {
+      MetricTimer blockReadTimer = TimerFactory.getTimer("Block_Read");
+      blockReadTimer.mark("Block Read\t" + blockId);
       readTrailingEmptyPacket();
       if (verifyChecksum) {
-        blockReadTimer.mark("Block Read\t" + blockId);
         sendReadResult(Status.CHECKSUM_OK);
       } else {
-        blockReadTimer.mark("Block Read\t" + blockId);
         sendReadResult(Status.SUCCESS);
       }
     }
