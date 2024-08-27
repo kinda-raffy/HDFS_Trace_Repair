@@ -26,7 +26,6 @@ import org.apache.hadoop.io.erasurecode.rawcoder.util.DumpUtil;
 import org.apache.hadoop.io.erasurecode.rawcoder.util.RSUtil;
 import org.apache.hadoop.metrics2.annotation.Metric;
 import org.apache.hadoop.util.MetricTimer;
-import org.apache.hadoop.util.TimerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -128,14 +127,11 @@ public class TRRawEncoder extends RawErasureEncoder {
             encodingState.encodeLength
         );
         try {
-            MetricTimer encodeTimer = TimerFactory.getTimer("Parity_Encoding");
-            encodeTimer.start();
             RSUtil.encodeData(
                     gfTables, encodingState.encodeLength,
                     encodingState.inputs, encodingState.inputOffsets,
                     encodingState.outputs, encodingState.outputOffsets
             );
-            encodeTimer.stop("Perform parity encoding");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

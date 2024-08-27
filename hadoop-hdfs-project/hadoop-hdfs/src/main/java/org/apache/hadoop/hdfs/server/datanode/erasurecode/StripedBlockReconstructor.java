@@ -73,10 +73,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       stripedWriter.init();
       recoveryTimer.mark("Start erasure coding recovery\t");
       recoveryTimer.start();
-      MetricTimer reconstructionTimer = TimerFactory.getTimer("Recovery_Reconstruct");
-      reconstructionTimer.start();
       reconstruct();
-      reconstructionTimer.stop("Perform reconstruct operation\t" + getBlockGroup().getBlockId());
       ourTestLogger.write("Performing block reconstruction");
       stripedWriter.endTargetBlocks();
       // Currently we don't check the acks for packets, this is similar as

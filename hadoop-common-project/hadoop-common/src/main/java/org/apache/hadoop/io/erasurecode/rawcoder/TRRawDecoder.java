@@ -19,10 +19,8 @@ package org.apache.hadoop.io.erasurecode.rawcoder;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
-import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.RecoveryTable;
 import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.DualBasisTable;
-import org.apache.hadoop.util.TimerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -92,41 +90,29 @@ public class TRRawDecoder extends RawErasureDecoder {
 
     @Override
     protected void doDecode(ByteArrayDecodingState decodingState) {
-        MetricTimer reconstructionTimer = TimerFactory.getTimer("Recovery_Reconstruct");
-        reconstructionTimer.start();
         CoderUtil.resetOutputBuffers(
             decodingState.outputs,
             decodingState.outputOffsets,
             decodingState.decodeLength
         );
-        reconstructionTimer.stop("Reset output buffers");
         // [FIXME] This should be done over every erased node.
         int erasedIndex = decodingState.erasedIndexes[0];
         int n = decodingState.decoder.getNumAllUnits();
 
         // [WARN] We assume only one node fails.
         byte[][] binaryTraces = new byte[n][];
-        reconstructionTimer.start();
         // [NOTE] Calculate bandwidth.
         for (int i = 0; i < n; i++) {
             bw[i] = recoveryTable.getByte_9_6(i, erasedIndex, 0);
         }
-        reconstructionTimer.stop("Calculate bandwidth");
-        reconstructionTimer.start();
         byte[] decimalTrace = decompressTraceCombined(
                 decodingState.inputs, decodingState.inputOffsets,
                 erasedIndex, decodingState.decodeLength
         );
-        reconstructionTimer.stop("Decompress and convert traces to decimals");
-        reconstructionTimer.start();
         byte[] revMem = repairDecimalTrace(erasedIndex);
-        reconstructionTimer.stop("Repair decimal trace");
-
-        reconstructionTimer.start();
         constructCj(
                 erasedIndex, decodingState.decodeLength, decimalTrace,
                 revMem, decodingState.outputs[0], decodingState.outputOffsets[0]);
-        reconstructionTimer.stop("Construct Cj");
 
         /*reconstructionTimer.start();
         // [NOTE] Decompress traces into its binary format.

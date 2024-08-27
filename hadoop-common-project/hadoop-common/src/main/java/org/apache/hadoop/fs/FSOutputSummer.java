@@ -22,8 +22,6 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.tracing.TraceScope;
-import org.apache.hadoop.util.MetricTimer;
-import org.apache.hadoop.util.TimerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -215,16 +213,12 @@ abstract public class FSOutputSummer extends OutputStream implements
   throws IOException {
     sum.calculateChunkedSums(b, off, len, checksum, 0);
     TraceScope scope = createWriteTraceScope();
-    MetricTimer fileGenerationTimer = TimerFactory.getTimer("File_Generation");
     try {
       for (int i = 0; i < len; i += sum.getBytesPerChecksum()) {
         int chunkLen = Math.min(sum.getBytesPerChecksum(), len - i);
         int ckOffset = i / sum.getBytesPerChecksum() * getChecksumSize();
-        fileGenerationTimer.start();
         writeChunk(b, off + i, chunkLen, checksum, ckOffset,
             getChecksumSize());
-        fileGenerationTimer.stop("Write a chunk");
-
       }
     } finally {
       if (scope != null) {
