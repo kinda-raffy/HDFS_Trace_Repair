@@ -26,7 +26,6 @@ import org.apache.hadoop.io.erasurecode.rawcoder.InvalidDecodingException;
 import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.util.OurTestLogger;
 import org.apache.hadoop.util.Time;
-import org.apache.hadoop.util.TimerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -65,15 +64,22 @@ class StripedBlockReconstructor extends StripedReconstructor
 
   @Override
   public void run() {
-    MetricTimer recoveryTimer = TimerFactory.getTimer("Block_Reconstruction_Task");
+    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    timer.start("recovery");
     try {
+      timer.start("init");
       initDecoderIfNecessary();
       initDecodingValidatorIfNecessary();
       getStripedReader().init();
       stripedWriter.init();
-      recoveryTimer.mark("Start erasure coding recovery\t");
-      recoveryTimer.start();
+      timer.end("init");
+      // recoveryTimer.mark("Start erasure coding recovery\t");
+      // recoveryTimer.start();
+      // timer.start();
+      timer.start("reconstruct");
       reconstruct();
+      timer.end("reconstruct");
+      // timer.stop("reconstruct done\t" + Long.toString(getBlockGroup().getBlockId()));
       ourTestLogger.write("Performing block reconstruction");
       stripedWriter.endTargetBlocks();
       // Currently we don't check the acks for packets, this is similar as
@@ -82,8 +88,6 @@ class StripedBlockReconstructor extends StripedReconstructor
       LOG.warn("Failed to reconstruct striped block: {}", getBlockGroup(), e);
       getDatanode().getMetrics().incrECFailedReconstructionTasks();
     } finally {
-      recoveryTimer.mark("Complete erasure coding recovery\t" + getBlockGroup().getBlockId());
-      recoveryTimer.stop("Complete erasure coding recovery\t" + getBlockGroup().getBlockId());
       float xmitWeight = getErasureCodingWorker().getXmitWeight();
       // if the xmits is smaller than 1, the xmitsSubmitted should be set to 1
       // because if it set to zero, we cannot to measure the xmits submitted
@@ -99,6 +103,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       stripedWriter.close();
       cleanup();
     }
+    timer.end("recovery");
   }
 
   @Override
@@ -116,21 +121,14 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
       // step1: read from minimum source DNs required for reconstruction.
       // The returned success list is the source DNs we do real read from
-      MetricTimer diskOperationTimer = TimerFactory.getTimer("Disk_Operations");
-      diskOperationTimer.start();
+      MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+      timer.start("consume_buffer");
       getStripedReader().readMinimumSources(toReconstructLen);
-      diskOperationTimer.stop("Read from striped read buffer\t" + getBlockGroup().getBlockId());
-      // ourTestLogger.write("Read " + toReconstructLen + " bytes from " +
-      //     getStripedReader().getMinRequiredSources() + " sources. Total bytes read: "
-      //     + bytesToRead + " out of " + getMaxTargetLength() + " bytes");
+      timer.end("consume_buffer");
       long readEnd = Time.monotonicNow();
 
       // step2: decode to reconstruct targets
-      // mergeData(toReconstructLen);
-      MetricTimer reconstructionTimer = TimerFactory.getTimer("Recovery_Reconstruct");
-      reconstructionTimer.start();
       reconstructTargets(toReconstructLen);
-      reconstructionTimer.stop("Decode chunk from sources\t" + getBlockGroup().getBlockId());
       long decodeEnd = Time.monotonicNow();
 
       // step3: transfer data
@@ -138,21 +136,25 @@ class StripedBlockReconstructor extends StripedReconstructor
       if (getDatanode().getEcReconstuctWriteThrottler() != null) {
         getDatanode().getEcReconstuctWriteThrottler().throttle(bytesToWrite);
       }
-      diskOperationTimer.start();
+      timer.start("write");
       if (stripedWriter.transferData2Targets() == 0) {
         String error = "Transfer failed for all targets.";
         throw new IOException(error);
       }
-      diskOperationTimer.stop("Save reconstructed data to recovery node\t" + getBlockGroup().getBlockId());
+      timer.end("write");
       long writeEnd = Time.monotonicNow();
 
       // Only successful reconstructions are recorded.
+      timer.start("clear_buffers");
       final DataNodeMetrics metrics = getDatanode().getMetrics();
       metrics.incrECReconstructionReadTime(readEnd - start);
       metrics.incrECReconstructionDecodingTime(decodeEnd - readEnd);
       metrics.incrECReconstructionWriteTime(writeEnd - decodeEnd);
       updatePositionInBlock(toReconstructLen);
+
+      timer.start("clear_buffers");
       clearBuffers();
+      timer.end("clear_buffers");
     }
   }
 
@@ -185,13 +187,12 @@ class StripedBlockReconstructor extends StripedReconstructor
     } else {
       if (isTR) {
         int erasedNodeIndex = getStripedReader().getErasedIndex();
-
-        MetricTimer reconstructionTimer = TimerFactory.getTimer("Recovery_Reconstruct");
-        reconstructionTimer.start();
+        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+        timer.start("collect_chunk");
         CollectChunkStream reconstructTargetInputs = new CollectChunkStream(nodeCount, DFSUtilClient.CHUNK_SIZE, erasedNodeIndex, recoveryTable);
+        timer.end("collect_chunk");
         reconstructTargetInputs.appendInputs(inputs);
         ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
-        reconstructionTimer.stop("Decompress chunk\t" + getBlockGroup().getBlockId());
         
         decode(decoderInputs, erasedIndices, outputs);
       } else {
@@ -205,19 +206,11 @@ class StripedBlockReconstructor extends StripedReconstructor
   private void decode(ByteBuffer[] inputs, int[] erasedIndices,
                       ByteBuffer[] outputs) throws IOException {
     long start = System.nanoTime();
-    MetricTimer reconstructionTimer = TimerFactory.getTimer("Recovery_Reconstruct");
-    reconstructionTimer.start();
+    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    timer.start("decode");
     getDecoder().decode(inputs, erasedIndices, outputs);
 
-    int[] inputs_sizes = new int[inputs.length];
-    for (int i = 0; i < inputs.length; ++i) {
-      if (inputs[i] != null)
-        inputs_sizes[i] = inputs[i].position();
-      else
-        inputs_sizes[i] = 0;
-    }
-    
-    reconstructionTimer.stop("Decode chunk\t" + bandwidths() + "\t" + Arrays.toString(inputs_sizes) + "\t" + getBlockGroup().getBlockId());
+    timer.end("decode");
     long end = System.nanoTime();
     this.getDatanode().getMetrics().incrECDecodingTime(end - start);
   }

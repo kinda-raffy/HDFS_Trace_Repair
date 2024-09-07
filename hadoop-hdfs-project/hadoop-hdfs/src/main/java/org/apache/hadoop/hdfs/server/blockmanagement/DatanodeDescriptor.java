@@ -51,9 +51,7 @@ import org.apache.hadoop.hdfs.util.LightWeightHashSet;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
 import org.apache.hadoop.hdfs.util.LightWeightLinkedSet;
 import org.apache.hadoop.util.IntrusiveCollection;
-import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.util.Time;
-import org.apache.hadoop.util.TimerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -708,8 +706,6 @@ public class DatanodeDescriptor extends DatanodeInfo {
     assert (block != null && sources != null && sources.length > 0);
     BlockECReconstructionInfo task = new BlockECReconstructionInfo(block,
         sources, targets, liveBlockIndices, excludeReconstrutedIndices, ecPolicy);
-    MetricTimer reconstructionTimer = TimerFactory.getTimer("Block_Reconstruction_Task");
-    reconstructionTimer.mark("Adding block reconstruction task\t" + block.getBlockId());
     ecBlocksToBeErasureCoded.offer(task);
     // reconstructionTimer.mark(block.getBlockId() + "\tBlock reconstruction task to " + getName());
     BlockManager.LOG.debug("Adding block reconstruction task " + task + "to "

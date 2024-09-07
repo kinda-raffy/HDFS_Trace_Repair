@@ -58,7 +58,6 @@ import static org.apache.hadoop.io.nativeio.NativeIO.POSIX.POSIX_FADV_SEQUENTIAL
 
 import org.apache.hadoop.classification.VisibleForTesting;
 import org.apache.hadoop.util.Preconditions;
-import org.apache.hadoop.util.TimerFactory;
 import org.slf4j.Logger;
 
 /**
@@ -589,9 +588,10 @@ class BlockSender implements java.io.Closeable {
     }
     
     int dataOff = checksumOff + checksumDataLen;
-    MetricTimer diskOperationTimer = TimerFactory.getTimer("Disk_Operations");
-    diskOperationTimer.start();
+    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    
     if (!transferTo) { // normal transfer
+      // timer.start("read_blocks");
       try {
         ris.readDataFully(buf, dataOff, dataLen);
       } catch (IOException ioe) {
@@ -604,8 +604,9 @@ class BlockSender implements java.io.Closeable {
       if (verifyChecksum) {
         verifyChecksum(buf, dataOff, dataLen, numChunks, checksumOff);
       }
+      // timer.end("read_blocks");
     }
-    diskOperationTimer.stop(block.getBlockId() + "");
+
     // Add a new buffer which is an expensive operation.
     // Compute trace (optimising buffering involved).
     try {
@@ -626,10 +627,10 @@ class BlockSender implements java.io.Closeable {
         blockInPosition += dataLen;
       } else {
         // normal transfer
+        // timer.start("out_write");
         out.write(buf, headerOff, dataOff + dataLen - headerOff);
+        // timer.end("out_write");
       }
-      MetricTimer outboundTimer = TimerFactory.getTimer("Outbound_Operations");
-      outboundTimer.mark("Block:\t" + block.getBlockId() + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength\t" + (dataOff - headerOff));
     } catch (IOException e) {
       if (e instanceof SocketTimeoutException) {
         /*
@@ -779,6 +780,8 @@ class BlockSender implements java.io.Closeable {
     if (out == null) {
       throw new IOException( "out stream is null" );
     }
+    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+
     initialOffset = offset;
     long totalRead = 0;
     OutputStream streamForSendChunks = out;
@@ -830,10 +833,11 @@ class BlockSender implements java.io.Closeable {
       // If this thread was interrupted, then it did not send the full block.
       if (!Thread.currentThread().isInterrupted()) {
         try {
-          // send an empty packet to mark the end of the block
+          timer.start("send_packets");
           sendPacket(pktBuf, maxChunksPerPacket, streamForSendChunks, transferTo,
               throttler);
           out.flush();
+          timer.end("send_packets");
         } catch (IOException e) { //socket error
           throw ioeToSocketException(e);
         }

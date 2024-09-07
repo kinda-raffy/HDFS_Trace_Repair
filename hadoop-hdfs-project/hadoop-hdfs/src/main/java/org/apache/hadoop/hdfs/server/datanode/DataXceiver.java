@@ -69,8 +69,10 @@ import org.apache.hadoop.net.unix.DomainSocket;
 import org.apache.hadoop.security.token.SecretManager.InvalidToken;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.DataChecksum;
+import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.util.StopWatch;
 import org.apache.hadoop.util.Time;
+import org.apache.zookeeper.server.metric.Metric;
 import org.slf4j.Logger;
 
 import java.io.BufferedInputStream;
@@ -588,6 +590,8 @@ class DataXceiver extends Receiver implements Runnable {
       final long length,
       final boolean sendChecksum,
       final CachingStrategy cachingStrategy) throws IOException {
+    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    timer.start("init");
     previousOpClientName = clientName;
     long read = 0;
     updateCurrentThreadName("Sending block " + block);
@@ -604,8 +608,9 @@ class DataXceiver extends Receiver implements Runnable {
         String.format(DN_CLIENTTRACE_FORMAT, localAddress, remoteAddress, "", "%d", "HDFS_READ",
             clientName, "%d", dnR.getDatanodeUuid(), block, "%d") :
         dnR + " Served block " + block + " to " + remoteAddress;
-
+    timer.end("init");
     try {
+      timer.start("bt_init");
       try {
         blockSender = new BlockSender(block, blockOffset, length,
             true, false, sendChecksum, datanode, clientTraceFmt,
@@ -616,14 +621,20 @@ class DataXceiver extends Receiver implements Runnable {
         sendResponse(ERROR, msg);
         throw e;
       }
+      timer.end("bt_init");
       
       // send op status
+      timer.start("send_op_status");
       writeSuccessWithChecksumInfo(blockSender, new DataOutputStream(getOutputStream()));
+      timer.end("send_op_status");
 
       long beginRead = Time.monotonicNow();
       // send data
+      timer.end("send_block");
       read = blockSender.sendBlock(out, baseStream, dataXceiverServer.getReadThrottler());
+      timer.end("send_block");
       long duration = Time.monotonicNow() - beginRead;
+      timer.start("send_check");
       if (blockSender.didSendEntireByteRange()) {
         // If we sent the entire range, then we should expect the client
         // to respond with a Status enum.
@@ -650,10 +661,13 @@ class DataXceiver extends Receiver implements Runnable {
       } else {
         IOUtils.closeStream(out);
       }
+      timer.end("send_check");
+      timer.start("metrics");
       datanode.metrics.incrBytesRead((int) read);
       datanode.metrics.incrBlocksRead();
       datanode.metrics.incrTotalReadTime(duration);
       DFSUtil.addTransferRateMetric(datanode.metrics, read, duration);
+      timer.end("metrics");
     } catch ( SocketException ignored ) {
       LOG.trace("{}:Ignoring exception while serving {} to {}",
           dnR, block, remoteAddress, ignored);
@@ -697,6 +711,8 @@ class DataXceiver extends Receiver implements Runnable {
                              final int helperNodeIndex,
                              final int dataBlkNum,
                              final int parityBlkNum) throws IOException {
+    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    timer.start("init");
     previousOpClientName = clientName;
     long read = 0;
     updateCurrentThreadName("Sending block trace " + block);
@@ -714,7 +730,9 @@ class DataXceiver extends Receiver implements Runnable {
                     String.format(DN_CLIENTTRACE_FORMAT, localAddress, remoteAddress, "%d", "HDFS_READ_TRACE",
                             clientName, "%d", dnR.getDatanodeUuid(), block, "%d") :
                     dnR + " Served block " + block + " to " + remoteAddress;
+    timer.end("init");
     try {
+      timer.start("bt_init");
       try { 
         blockTraceSender = new BlockTraceSender(block, blockOffset, length,
                 false, false, false, datanode, clientTraceFmt,
@@ -725,13 +743,19 @@ class DataXceiver extends Receiver implements Runnable {
         sendResponse(ERROR, msg);
         throw e;
       }
-
+      timer.end("bt_init");
       // send op status
+      timer.start("send_op_status");
       writeSuccessWithChecksumInfo(blockTraceSender, new DataOutputStream(getOutputStream()));
+      timer.end("send_op_status");
 
       long beginRead = Time.monotonicNow();
+      timer.start("send_block");
       read = blockTraceSender.sendBlock(out, baseStream, null); // send trace data
+      timer.end("send_block");
+      
       long duration = Time.monotonicNow() - beginRead;
+      timer.start("send_check");
       if (blockTraceSender.didSendEntireByteRange()) {
         // If we sent the entire range, then we should expect the client
         // to respond with a Status enum.
@@ -756,6 +780,8 @@ class DataXceiver extends Receiver implements Runnable {
       } else {
         IOUtils.closeStream(out);
       }
+      timer.end("send_check");
+      timer.start("metrics");
       datanode.metrics.incrBytesRead((int) read);
       datanode.metrics.incrBlocksRead();
       datanode.metrics.incrTotalReadTime(duration);
@@ -765,6 +791,7 @@ class DataXceiver extends Receiver implements Runnable {
       long bytesRead = datanode.getMetrics().getecReconstructionBytesRead();
       long reconstructionTasks = datanode.getMetrics().getecReconstructionTasks();
       long readTimeMillis = datanode.getMetrics().getecReconstructionReadTimeMillis();
+      timer.end("metrics");
     } catch ( SocketException ignored ) {
       if (LOG.isTraceEnabled()) {
         String socketExceptionMessage = dnR + ":Ignoring exception while serving " + block + " to " +

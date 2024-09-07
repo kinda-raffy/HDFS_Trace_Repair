@@ -123,10 +123,8 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.Daemon;
 import org.apache.hadoop.util.ExitUtil;
 import org.apache.hadoop.util.LightWeightGSet;
-import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.Time;
-import org.apache.hadoop.util.TimerFactory;
 import org.apache.hadoop.classification.VisibleForTesting;
 import org.apache.hadoop.util.Preconditions;
 
@@ -4446,11 +4444,11 @@ public class BlockManager implements BlockStatsMXBean {
 
     final DatanodeDescriptor node = storageInfo.getDatanodeDescriptor();
 
-    MetricTimer reconstructionTimer = TimerFactory.getTimer("Block_Reconstruction_Task");
+    // MetricTimer reconstructionTimer = TimerFactory.getTimer("Block_Reconstruction_Task");
 
     switch (reportedState) {
       case FINALIZED:
-        reconstructionTimer.mark("Recovery task finished\t" + block.getBlockId());
+        // reconstructionTimer.mark("Recovery task finished\t" + block.getBlockId());
         break;
       default:
         break;

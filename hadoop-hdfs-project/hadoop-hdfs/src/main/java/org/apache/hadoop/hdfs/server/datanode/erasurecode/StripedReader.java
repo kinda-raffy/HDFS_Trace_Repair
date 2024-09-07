@@ -92,7 +92,7 @@ class StripedReader {
   private final ErasureCodingPolicy ecPolicy;
   private HelperTable96Client helperTable = new HelperTable96Client();
 
-  MetricTimer inboundTrafficTimer;
+  private StripedReconstructionInfo stripedReconInfo;
 
   StripedReader(StripedReconstructor reconstructor, DataNode datanode,
       Configuration conf, StripedReconstructionInfo stripedReconInfo) {
@@ -106,9 +106,9 @@ class StripedReader {
     this.reconstructor = reconstructor;
     this.datanode = datanode;
     this.conf = conf;
-    
-    inboundTrafficTimer = TimerFactory.getTimer("Inbound_Traffic");
 
+    this.stripedReconInfo = stripedReconInfo;
+    
     dataBlkNum = stripedReconInfo.getEcPolicy().getNumDataUnits();
     parityBlkNum = stripedReconInfo.getEcPolicy().getNumParityUnits();
     totalBlkNum = dataBlkNum + parityBlkNum;
@@ -391,7 +391,6 @@ class StripedReader {
 
       int toRead = getReadLength(liveIndices[successList[i]],
           reconstructLength);
-      inboundTrafficTimer.mark("Block\t" + reconstructor.getBlockGroup().getBlockId() + "\tSource:\t" + datanodeID.getXferAddr() + "\tLength\t" + toRead);
       if (toRead > 0) {
         Callable<BlockReadStats> readCallable =
             reader.readFromBlock(toRead, corruptedBlocks);
@@ -453,10 +452,7 @@ class StripedReader {
           + "required by reconstruction, block id: " +
           reconstructor.getBlockGroup().getBlockId();
       throw new IOException(error);
-    }
-    MetricTimer endRead = TimerFactory.getTimer("Completed_Striped_Read");
-    endRead.mark(reconstructor.getBlockGroup().getBlockId() + "\tEnd Read");
-    
+    } 
     return newSuccess;
   }
 

@@ -49,17 +49,13 @@ import org.apache.hadoop.hdfs.server.datanode.CachingStrategy;
 import org.apache.hadoop.hdfs.shortcircuit.ClientMmap;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.DataChecksum;
-import org.apache.hadoop.util.MetricTimer;
-// import org.apache.htrace.core.TraceScope;
 import org.apache.hadoop.tracing.TraceScope;
 
 import org.apache.hadoop.classification.VisibleForTesting;
 
-// import org.apache.htrace.core.Tracer;
 import org.apache.hadoop.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.hadoop.util.TimerFactory;
 
 /**
  * This is a wrapper around connection to datanode
@@ -132,9 +128,6 @@ public class BlockTraceReaderRemote implements BlockReader {
     private int helperNodeIndex;
     private  HelperTable96Client helperTable = new HelperTable96Client();
 
-
-    MetricTimer blockReadTimer = TimerFactory.getTimer("Block_Read");
-
     @VisibleForTesting
     public Peer getPeer() {
         return peer;
@@ -194,7 +187,6 @@ public class BlockTraceReaderRemote implements BlockReader {
     private void readNextPacket() throws IOException {
         //Read packet headers.
         packetReceiver.receiveNextPacket(in);
-
         PacketHeader curHeader = packetReceiver.getHeader();
 
         curDataSlice = packetReceiver.getDataSlice();
@@ -242,7 +234,6 @@ public class BlockTraceReaderRemote implements BlockReader {
         // header, which should be empty
         if (bytesNeededToFinish <= 0) {
             readTrailingEmptyPacket();
-            blockReadTimer.mark("Block Read\t" + blockId);
             if (verifyChecksum) {
                 sendReadResult(Status.CHECKSUM_OK);
             } else {

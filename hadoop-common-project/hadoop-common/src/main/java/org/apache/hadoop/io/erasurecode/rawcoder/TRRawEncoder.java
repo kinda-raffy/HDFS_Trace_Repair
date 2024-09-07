@@ -24,8 +24,6 @@ import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
 import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.HelperTable;
 import org.apache.hadoop.io.erasurecode.rawcoder.util.DumpUtil;
 import org.apache.hadoop.io.erasurecode.rawcoder.util.RSUtil;
-import org.apache.hadoop.metrics2.annotation.Metric;
-import org.apache.hadoop.util.MetricTimer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

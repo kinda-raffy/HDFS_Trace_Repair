@@ -484,6 +484,7 @@ class BlockTraceSender implements java.io.Closeable {
         if (out == null) {
             throw new IOException( "out stream is null" );
         }
+        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
         initialOffset = offset;
         long totalSentCheck = 0;
         long totalRead = 0;
@@ -511,8 +512,10 @@ class BlockTraceSender implements java.io.Closeable {
             ByteBuffer pktBuf = ByteBuffer.allocate(pktBufSize);
             while (endOffset > offset && !Thread.currentThread().isInterrupted()) {
                 manageOsCache();
+                timer.start("send_packets");
                 int[] dataLengths = sendPacketTraceReader(pktBuf, maxChunksPerPacket, out,
                         false, throttler);
+                timer.end("send_packets");
                 int READ_INDEX = 0;
                 int SENT_INDEX = 1;
                 int len = dataLengths[READ_INDEX];
@@ -526,9 +529,11 @@ class BlockTraceSender implements java.io.Closeable {
             if (!Thread.currentThread().isInterrupted()) {
                 try {
                     // send an empty packet to mark the end of the block
+                    timer.start("send_packets");
                     sendPacketTraceReader(pktBuf, maxChunksPerPacket, out, false,
                             throttler);
                     out.flush();
+                    timer.end("send_packets");
                 } catch (IOException e) { //socket error
                     throw ioeToSocketException(e);
                 }
@@ -567,10 +572,13 @@ class BlockTraceSender implements java.io.Closeable {
         // encoderOutput <= 16 depends on bw
 
         byte[] encoderInput = new byte[dataLen];
-        MetricTimer diskOperationTimer = TimerFactory.getTimer("Disk_Operations");
-        diskOperationTimer.start();
+
+        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+        timer.start("read_blocks");
         replicaInputStreams.readDataFully(encoderInput, 0, dataLen);
-        diskOperationTimer.stop(block.getBlockId() + "");
+        timer.end("read_blocks");
+
+        // diskOperationTimer.stop(block.getBlockId() + "");
         byte[] encoderOutput = repairTraceGeneration(helperNodeIndex, lostNodeIndex, encoderInput, dataLen);
         // byte[] encoderOutput = new byte[(int) Math.ceil((double) nodeTrace.length / 8)];
         // compressTrace(nodeTrace, encoderOutput);
@@ -586,7 +594,9 @@ class BlockTraceSender implements java.io.Closeable {
         // src - The array from which bytes are to be read
         // offset - The offset within the array of the first byte to be read; must be non-negative and no larger than array.length
         // length - The number of bytes to be read from the given array; must be non-negative and no larger than array.length - offset
+        timer.start("buf_put");
         packetBuffer.put(encoderOutput, 0, encoderOutput.length);
+        timer.end("buf_put");
         // this method returns the byte array that backs this buffer
         byte[] buf = packetBuffer.array(); // the byte array buf copied with the contents of the pkt buffer
         byte bw = helperTable.getByte_9_6(helperNodeIndex, lostNodeIndex, 0);
@@ -596,9 +606,9 @@ class BlockTraceSender implements java.io.Closeable {
             // b - the data.
             // off - the start offset in the data.
             // len - the number of bytes to write.
+            timer.start("out_write");
             out.write(buf, headerOffset, encoderOutput.length + headerLength);
-            MetricTimer outboundTimer = TimerFactory.getTimer("Outbound_Operations");
-            outboundTimer.mark("Block:\t" + block.getBlockId() + "\tSender:\t" + datanode.getDatanodeId().getXferAddr() + "\tLength:\t" + (encoderOutput.length) + "\tBandwith:" + bw);
+            timer.end("out_write");
         } catch (IOException e) {
             String exceptionMessage = "sendPacketMethod - Error: " + e.getMessage();
             //noinspection StatementWithEmptyBody
@@ -647,8 +657,8 @@ class BlockTraceSender implements java.io.Closeable {
         byte[] Hij = new byte[H.length - 1];
         System.arraycopy(H, 1, Hij, 0, Hij.length);
         int idx = 0;
-        MetricTimer helperTraceTimer = TimerFactory.getTimer("Helper_Trace_Computation");
-        helperTraceTimer.start();
+        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+        timer.start("compute_trace");
         if (bw == 4) {
             for (int testCodeWord = 0; testCodeWord < encodeLength; testCodeWord++) {
                 byte codeWord = inputs[testCodeWord];
@@ -684,9 +694,11 @@ class BlockTraceSender implements java.io.Closeable {
                 }
             }
         }
+        timer.end("compute_trace");
         byte[] compressedRepairTrace = new byte[(int) (encodeLength * (bw / 8.0))];
+        timer.start("compress_trace");
         compressTrace(repairTrace, compressedRepairTrace);
-        helperTraceTimer.stop("Block:\t" + block.getBlockId() + "\tAt:\t" + datanode.getDatanodeId().getXferAddr() + "\tBW:\t" + bw + '\t' + inputs.length);
+        timer.end("compress_trace");
         ourTestLogger.write("Trace Generation at HelperNode: " + nodeIndex + " with erased node: " + erasedNodeIndex + " - bw: " + bw);
         return compressedRepairTrace;
     }
