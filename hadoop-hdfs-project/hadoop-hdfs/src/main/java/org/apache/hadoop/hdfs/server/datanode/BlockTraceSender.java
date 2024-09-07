@@ -515,6 +515,7 @@ class BlockTraceSender implements java.io.Closeable {
                 timer.start("send_packets");
                 int[] dataLengths = sendPacketTraceReader(pktBuf, maxChunksPerPacket, out,
                         false, throttler);
+                NetworkTimer.markOutbound(block.getBlockId());
                 timer.end("send_packets");
                 int READ_INDEX = 0;
                 int SENT_INDEX = 1;
@@ -532,6 +533,7 @@ class BlockTraceSender implements java.io.Closeable {
                     timer.start("send_packets");
                     sendPacketTraceReader(pktBuf, maxChunksPerPacket, out, false,
                             throttler);
+                    NetworkTimer.markOutbound(block.getBlockId());
                     out.flush();
                     timer.end("send_packets");
                 } catch (IOException e) { //socket error

@@ -51,6 +51,7 @@ import org.apache.hadoop.net.SocketOutputStream;
 import org.apache.hadoop.util.AutoCloseableLock;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.MetricTimer;
+import org.apache.hadoop.util.NetworkTimer;
 import org.apache.hadoop.tracing.TraceScope;
 
 import static org.apache.hadoop.io.nativeio.NativeIO.POSIX.POSIX_FADV_DONTNEED;
@@ -824,8 +825,11 @@ class BlockSender implements java.io.Closeable {
 
       while (endOffset > offset && !Thread.currentThread().isInterrupted()) {
         manageOsCache();
+        // timer.start("send_packets");
         long len = sendPacket(pktBuf, maxChunksPerPacket, streamForSendChunks,
             transferTo, throttler);
+        NetworkTimer.markOutbound(block.getBlockId());
+        // timer.end("send_packets");
         offset += len;
         totalRead += len + (numberOfChunks(len) * checksumSize);
         seqno++;
@@ -836,6 +840,7 @@ class BlockSender implements java.io.Closeable {
           timer.start("send_packets");
           sendPacket(pktBuf, maxChunksPerPacket, streamForSendChunks, transferTo,
               throttler);
+          NetworkTimer.markOutbound(block.getBlockId());
           out.flush();
           timer.end("send_packets");
         } catch (IOException e) { //socket error

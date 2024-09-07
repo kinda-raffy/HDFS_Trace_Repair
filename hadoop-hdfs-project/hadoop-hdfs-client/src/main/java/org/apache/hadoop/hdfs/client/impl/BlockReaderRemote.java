@@ -50,11 +50,11 @@ import org.apache.hadoop.hdfs.server.datanode.CachingStrategy;
 import org.apache.hadoop.hdfs.shortcircuit.ClientMmap;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.DataChecksum;
+import org.apache.hadoop.util.NetworkTimer;
 import org.apache.hadoop.classification.VisibleForTesting;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-// import org.apache.hadoop.util.TimerFactory;
 
 import static org.apache.hadoop.hdfs.client.HdfsClientConfigKeys.DFS_CLIENT_BLOCK_READER_REMOTE_BUFFER_SIZE_DEFAULT;
 import static org.apache.hadoop.hdfs.client.HdfsClientConfigKeys.DFS_CLIENT_BLOCK_READER_REMOTE_BUFFER_SIZE_KEY;
@@ -167,6 +167,7 @@ public class BlockReaderRemote implements BlockReader {
   public synchronized int read(ByteBuffer buf) throws IOException {
     if (curDataSlice == null ||
         (curDataSlice.remaining() == 0 && bytesNeededToFinish > 0)) {
+      NetworkTimer.markInbound(blockId);
       readNextPacket();
     }
     if (curDataSlice.remaining() == 0) {

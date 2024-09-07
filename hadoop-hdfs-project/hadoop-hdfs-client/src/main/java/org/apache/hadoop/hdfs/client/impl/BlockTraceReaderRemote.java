@@ -49,6 +49,7 @@ import org.apache.hadoop.hdfs.server.datanode.CachingStrategy;
 import org.apache.hadoop.hdfs.shortcircuit.ClientMmap;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.DataChecksum;
+import org.apache.hadoop.util.NetworkTimer;
 import org.apache.hadoop.tracing.TraceScope;
 
 import org.apache.hadoop.classification.VisibleForTesting;
@@ -167,6 +168,7 @@ public class BlockTraceReaderRemote implements BlockReader {
                 (curDataSlice.remaining() == 0 && bytesNeededToFinish > 0)) {
             try (TraceScope ignored = tracer.newScope(
                     "BlockTraceReaderRemote2#readNextPacket(" + blockId + ")")) {
+                NetworkTimer.markInbound(blockId);
                 readNextPacket();
             }
         }
