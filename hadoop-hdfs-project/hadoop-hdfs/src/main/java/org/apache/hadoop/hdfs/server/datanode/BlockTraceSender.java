@@ -124,7 +124,6 @@ class BlockTraceSender implements java.io.Closeable {
     // would risk sending too much unnecessary data. 512 (1 disk sector)
     // is likely to result in minimal extra IO.
     private static final long CHUNK_SIZE = 512;
-    private final OurTestLogger ourTestLogger = OurTestLogger.getInstance();
     static final Logger ClientTraceLog = DataNode.CLIENT_TRACE_LOG;
     private static final boolean is32Bit =
             System.getProperty("sun.arch.data.model").equals("32");
@@ -553,7 +552,6 @@ class BlockTraceSender implements java.io.Closeable {
         }
 
         double totalSentInKb = totalSentCheck / (1024 * 1024 * 1.0);
-        ourTestLogger.write("HelperNode: " + helperNodeIndex + " sends: " + totalSentInKb + "Mb");
         return totalSentCheck;
     }
 
@@ -701,7 +699,6 @@ class BlockTraceSender implements java.io.Closeable {
         timer.start("compress_trace");
         compressTrace(repairTrace, compressedRepairTrace);
         timer.end("compress_trace");
-        ourTestLogger.write("Trace Generation at HelperNode: " + nodeIndex + " with erased node: " + erasedNodeIndex + " - bw: " + bw);
         return compressedRepairTrace;
     }
 
