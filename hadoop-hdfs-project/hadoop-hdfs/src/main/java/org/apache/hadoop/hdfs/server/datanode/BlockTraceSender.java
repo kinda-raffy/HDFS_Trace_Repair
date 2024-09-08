@@ -552,6 +552,7 @@ class BlockTraceSender implements java.io.Closeable {
         }
 
         double totalSentInKb = totalSentCheck / (1024 * 1024 * 1.0);
+        timer.close();
         return totalSentCheck;
     }
 
@@ -566,6 +567,7 @@ class BlockTraceSender implements java.io.Closeable {
      */
     private int[] sendPacketTraceReader(ByteBuffer packetBuffer, int maxChunks, OutputStream out,
                                         boolean transferTo, DataTransferThrottler throttler) throws IOException {
+        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
         long normalDataReadingLen = chunkSize * (long) maxChunks;
         int dataLen = (int) Math.min(endOffset - offset, normalDataReadingLen);
         // dataLen = 16
@@ -573,7 +575,6 @@ class BlockTraceSender implements java.io.Closeable {
 
         byte[] encoderInput = new byte[dataLen];
 
-        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
         timer.start("read_blocks");
         replicaInputStreams.readDataFully(encoderInput, 0, dataLen);
         timer.end("read_blocks");
@@ -644,6 +645,7 @@ class BlockTraceSender implements java.io.Closeable {
             // Rebalancing required therefore throttle.
             throttler.throttle(packetLength);
         }
+        
         return new int[]{dataLen, encoderOutput.length};
     }
 
@@ -651,13 +653,13 @@ class BlockTraceSender implements java.io.Closeable {
             int nodeIndex, int erasedNodeIndex,
             byte[] inputs, int encodeLength
     ) {
+        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
         byte bw = helperTable.getByte_9_6(nodeIndex, erasedNodeIndex, 0);
         byte[] repairTrace = new byte[bw * encodeLength];
         byte[] H = helperTable.getRow_9_6(nodeIndex, erasedNodeIndex);
         byte[] Hij = new byte[H.length - 1];
         System.arraycopy(H, 1, Hij, 0, Hij.length);
         int idx = 0;
-        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
         timer.start("compute_trace");
         if (bw == 4) {
             for (int testCodeWord = 0; testCodeWord < encodeLength; testCodeWord++) {
@@ -699,6 +701,7 @@ class BlockTraceSender implements java.io.Closeable {
         timer.start("compress_trace");
         compressTrace(repairTrace, compressedRepairTrace);
         timer.end("compress_trace");
+        timer.close();
         return compressedRepairTrace;
     }
 

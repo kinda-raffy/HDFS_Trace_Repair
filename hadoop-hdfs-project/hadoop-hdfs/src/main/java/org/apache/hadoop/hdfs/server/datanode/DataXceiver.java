@@ -697,6 +697,7 @@ class DataXceiver extends Receiver implements Runnable {
     // Update metrics.
     datanode.metrics.addReadBlockOp(elapsed());
     datanode.metrics.incrReadsFromClient(peer.isLocal(), read);
+    timer.close();
   }
 
   @Override
@@ -821,6 +822,7 @@ class DataXceiver extends Receiver implements Runnable {
     //update metrics
     datanode.metrics.addReadBlockTraceOp(elapsed());
     datanode.metrics.incrReadsFromClient(peer.isLocal(), read);
+    timer.close();
   }
 
   @Override

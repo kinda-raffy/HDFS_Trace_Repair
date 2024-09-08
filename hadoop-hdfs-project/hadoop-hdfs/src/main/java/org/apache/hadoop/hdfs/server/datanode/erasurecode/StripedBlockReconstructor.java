@@ -101,10 +101,12 @@ class StripedBlockReconstructor extends StripedReconstructor
       cleanup();
     }
     timer.end("recovery");
+    timer.close();
   }
 
   @Override
   void reconstruct() throws IOException {
+    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
     while (getPositionInBlock() < getMaxTargetLength()) {
       DataNodeFaultInjector.get().stripedBlockReconstruction();
       long remaining = getMaxTargetLength() - getPositionInBlock();
@@ -118,7 +120,6 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
       // step1: read from minimum source DNs required for reconstruction.
       // The returned success list is the source DNs we do real read from
-      MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
       timer.start("consume_buffer");
       getStripedReader().readMinimumSources(toReconstructLen);
       timer.end("consume_buffer");
@@ -153,11 +154,12 @@ class StripedBlockReconstructor extends StripedReconstructor
       clearBuffers();
       timer.end("clear_buffers");
     }
+    timer.close();
   }
 
   private void reconstructTargets(int toReconstructLen) throws IOException {
+    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
     ByteBuffer[] inputs = getStripedReader().getInputBuffers(toReconstructLen);
-    
     int[] erasedIndices = stripedWriter.getRealTargetIndices();
     ByteBuffer[] outputs = stripedWriter.getRealTargetBuffers(toReconstructLen);
 
@@ -184,7 +186,7 @@ class StripedBlockReconstructor extends StripedReconstructor
     } else {
       if (isTR) {
         int erasedNodeIndex = getStripedReader().getErasedIndex();
-        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+        
         timer.start("collect_chunk");
         CollectChunkStream reconstructTargetInputs = new CollectChunkStream(nodeCount, DFSUtilClient.CHUNK_SIZE, erasedNodeIndex, recoveryTable);
         timer.end("collect_chunk");
@@ -196,20 +198,20 @@ class StripedBlockReconstructor extends StripedReconstructor
         decode(inputs, erasedIndices, outputs);
       }
     }
-
     stripedWriter.updateRealTargetBuffers(toReconstructLen);
+    timer.close();
   }
 
   private void decode(ByteBuffer[] inputs, int[] erasedIndices,
                       ByteBuffer[] outputs) throws IOException {
-    long start = System.nanoTime();
     MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    long start = System.nanoTime();
     timer.start("decode");
     getDecoder().decode(inputs, erasedIndices, outputs);
-
     timer.end("decode");
     long end = System.nanoTime();
     this.getDatanode().getMetrics().incrECDecodingTime(end - start);
+    timer.close();
   }
 
   /**

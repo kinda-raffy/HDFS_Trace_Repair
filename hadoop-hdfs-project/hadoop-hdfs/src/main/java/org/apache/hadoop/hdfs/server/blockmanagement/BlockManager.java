@@ -4444,11 +4444,8 @@ public class BlockManager implements BlockStatsMXBean {
 
     final DatanodeDescriptor node = storageInfo.getDatanodeDescriptor();
 
-    // MetricTimer reconstructionTimer = TimerFactory.getTimer("Block_Reconstruction_Task");
-
     switch (reportedState) {
       case FINALIZED:
-        // reconstructionTimer.mark("Recovery task finished\t" + block.getBlockId());
         break;
       default:
         break;

@@ -589,10 +589,8 @@ class BlockSender implements java.io.Closeable {
     }
     
     int dataOff = checksumOff + checksumDataLen;
-    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
     
     if (!transferTo) { // normal transfer
-      // timer.start("read_blocks");
       try {
         ris.readDataFully(buf, dataOff, dataLen);
       } catch (IOException ioe) {
@@ -605,7 +603,6 @@ class BlockSender implements java.io.Closeable {
       if (verifyChecksum) {
         verifyChecksum(buf, dataOff, dataLen, numChunks, checksumOff);
       }
-      // timer.end("read_blocks");
     }
 
     // Add a new buffer which is an expensive operation.
@@ -628,9 +625,7 @@ class BlockSender implements java.io.Closeable {
         blockInPosition += dataLen;
       } else {
         // normal transfer
-        // timer.start("out_write");
         out.write(buf, headerOff, dataOff + dataLen - headerOff);
-        // timer.end("out_write");
       }
     } catch (IOException e) {
       if (e instanceof SocketTimeoutException) {
@@ -859,6 +854,7 @@ class BlockSender implements java.io.Closeable {
       }
       close();
     }
+    timer.close();
     return totalRead;
   }
 
