@@ -552,7 +552,6 @@ class BlockTraceSender implements java.io.Closeable {
         }
 
         double totalSentInKb = totalSentCheck / (1024 * 1024 * 1.0);
-        timer.close();
         return totalSentCheck;
     }
 
@@ -701,7 +700,6 @@ class BlockTraceSender implements java.io.Closeable {
         timer.start("compress_trace");
         compressTrace(repairTrace, compressedRepairTrace);
         timer.end("compress_trace");
-        timer.close();
         return compressedRepairTrace;
     }
 

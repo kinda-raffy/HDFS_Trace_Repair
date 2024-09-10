@@ -27,6 +27,7 @@ public class MetricTimer {
         try {
             writer.write(thread + "\tSTART\t" + label + "\t" + timestamp);
             writer.newLine();
+            writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -37,15 +38,7 @@ public class MetricTimer {
         try {
             writer.write(thread + "\tEND\t" + label + "\t" + timestamp);
             writer.newLine();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void close() {
-        try {
             writer.flush();
-            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

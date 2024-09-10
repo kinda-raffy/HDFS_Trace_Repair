@@ -591,7 +591,6 @@ class DataXceiver extends Receiver implements Runnable {
       final boolean sendChecksum,
       final CachingStrategy cachingStrategy) throws IOException {
     MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
-    timer.start("init");
     previousOpClientName = clientName;
     long read = 0;
     updateCurrentThreadName("Sending block " + block);
@@ -608,7 +607,6 @@ class DataXceiver extends Receiver implements Runnable {
         String.format(DN_CLIENTTRACE_FORMAT, localAddress, remoteAddress, "", "%d", "HDFS_READ",
             clientName, "%d", dnR.getDatanodeUuid(), block, "%d") :
         dnR + " Served block " + block + " to " + remoteAddress;
-    timer.end("init");
     try {
       timer.start("bt_init");
       try {
@@ -697,7 +695,6 @@ class DataXceiver extends Receiver implements Runnable {
     // Update metrics.
     datanode.metrics.addReadBlockOp(elapsed());
     datanode.metrics.incrReadsFromClient(peer.isLocal(), read);
-    timer.close();
   }
 
   @Override
@@ -713,7 +710,6 @@ class DataXceiver extends Receiver implements Runnable {
                              final int dataBlkNum,
                              final int parityBlkNum) throws IOException {
     MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
-    timer.start("init");
     previousOpClientName = clientName;
     long read = 0;
     updateCurrentThreadName("Sending block trace " + block);
@@ -731,7 +727,6 @@ class DataXceiver extends Receiver implements Runnable {
                     String.format(DN_CLIENTTRACE_FORMAT, localAddress, remoteAddress, "%d", "HDFS_READ_TRACE",
                             clientName, "%d", dnR.getDatanodeUuid(), block, "%d") :
                     dnR + " Served block " + block + " to " + remoteAddress;
-    timer.end("init");
     try {
       timer.start("bt_init");
       try { 
@@ -822,7 +817,6 @@ class DataXceiver extends Receiver implements Runnable {
     //update metrics
     datanode.metrics.addReadBlockTraceOp(elapsed());
     datanode.metrics.incrReadsFromClient(peer.isLocal(), read);
-    timer.close();
   }
 
   @Override

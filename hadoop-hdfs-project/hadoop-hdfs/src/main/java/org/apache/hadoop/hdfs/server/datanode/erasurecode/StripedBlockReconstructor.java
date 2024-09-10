@@ -101,7 +101,6 @@ class StripedBlockReconstructor extends StripedReconstructor
       cleanup();
     }
     timer.end("recovery");
-    timer.close();
   }
 
   @Override
@@ -143,7 +142,6 @@ class StripedBlockReconstructor extends StripedReconstructor
       long writeEnd = Time.monotonicNow();
 
       // Only successful reconstructions are recorded.
-      timer.start("clear_buffers");
       final DataNodeMetrics metrics = getDatanode().getMetrics();
       metrics.incrECReconstructionReadTime(readEnd - start);
       metrics.incrECReconstructionDecodingTime(decodeEnd - readEnd);
@@ -154,7 +152,6 @@ class StripedBlockReconstructor extends StripedReconstructor
       clearBuffers();
       timer.end("clear_buffers");
     }
-    timer.close();
   }
 
   private void reconstructTargets(int toReconstructLen) throws IOException {
@@ -199,7 +196,6 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
     }
     stripedWriter.updateRealTargetBuffers(toReconstructLen);
-    timer.close();
   }
 
   private void decode(ByteBuffer[] inputs, int[] erasedIndices,
@@ -211,7 +207,6 @@ class StripedBlockReconstructor extends StripedReconstructor
     timer.end("decode");
     long end = System.nanoTime();
     this.getDatanode().getMetrics().incrECDecodingTime(end - start);
-    timer.close();
   }
 
   /**

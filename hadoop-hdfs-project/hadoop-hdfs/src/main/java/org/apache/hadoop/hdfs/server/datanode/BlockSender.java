@@ -854,7 +854,6 @@ class BlockSender implements java.io.Closeable {
       }
       close();
     }
-    timer.close();
     return totalRead;
   }
 
