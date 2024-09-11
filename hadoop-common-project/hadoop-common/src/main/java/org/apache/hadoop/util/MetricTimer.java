@@ -25,7 +25,7 @@ public class MetricTimer {
     public void start(String label) {
         long timestamp = System.currentTimeMillis();
         try {
-            writer.write(thread + "\tSTART\t" + label + "\t" + timestamp);
+            writer.write(timestamp + "\t" + thread + "\tSTART\t" + label);
             writer.newLine();
             writer.flush();
         } catch (IOException e) {
@@ -36,7 +36,7 @@ public class MetricTimer {
     public void end(String label) {
         long timestamp = System.currentTimeMillis();
         try {
-            writer.write(thread + "\tEND\t" + label + "\t" + timestamp);
+            writer.write(timestamp + "\t" + thread + "\tEND\t" + label);
             writer.newLine();
             writer.flush();
         } catch (IOException e) {
