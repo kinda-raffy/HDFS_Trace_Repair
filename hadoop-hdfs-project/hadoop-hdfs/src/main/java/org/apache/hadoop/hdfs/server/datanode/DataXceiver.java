@@ -628,7 +628,7 @@ class DataXceiver extends Receiver implements Runnable {
 
       long beginRead = Time.monotonicNow();
       // send data
-      timer.end("send_block");
+      timer.start("send_block");
       read = blockSender.sendBlock(out, baseStream, dataXceiverServer.getReadThrottler());
       timer.end("send_block");
       long duration = Time.monotonicNow() - beginRead;

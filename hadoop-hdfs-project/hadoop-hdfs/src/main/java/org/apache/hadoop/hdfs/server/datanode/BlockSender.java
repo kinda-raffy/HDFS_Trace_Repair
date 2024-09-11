@@ -832,12 +832,12 @@ class BlockSender implements java.io.Closeable {
       // If this thread was interrupted, then it did not send the full block.
       if (!Thread.currentThread().isInterrupted()) {
         try {
-          timer.start("send_packets");
+          // timer.start("send_packets");
           sendPacket(pktBuf, maxChunksPerPacket, streamForSendChunks, transferTo,
               throttler);
           NetworkTimer.markOutbound(block.getBlockId());
           out.flush();
-          timer.end("send_packets");
+          // timer.end("send_packets");
         } catch (IOException e) { //socket error
           throw ioeToSocketException(e);
         }
