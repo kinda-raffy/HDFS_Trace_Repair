@@ -167,7 +167,7 @@ public class BlockReaderRemote implements BlockReader {
   public synchronized int read(ByteBuffer buf) throws IOException {
     if (curDataSlice == null ||
         (curDataSlice.remaining() == 0 && bytesNeededToFinish > 0)) {
-      NetworkTimer.markInbound(blockId);
+      // NetworkTimer.markInbound(blockId);
       readNextPacket();
     }
     if (curDataSlice.remaining() == 0) {

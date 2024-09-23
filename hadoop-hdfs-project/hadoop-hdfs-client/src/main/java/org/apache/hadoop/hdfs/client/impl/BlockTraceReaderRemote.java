@@ -168,7 +168,7 @@ public class BlockTraceReaderRemote implements BlockReader {
                 (curDataSlice.remaining() == 0 && bytesNeededToFinish > 0)) {
             try (TraceScope ignored = tracer.newScope(
                     "BlockTraceReaderRemote2#readNextPacket(" + blockId + ")")) {
-                NetworkTimer.markInbound(blockId);
+                // NetworkTimer.markInbound(blockId);
                 readNextPacket();
             }
         }
