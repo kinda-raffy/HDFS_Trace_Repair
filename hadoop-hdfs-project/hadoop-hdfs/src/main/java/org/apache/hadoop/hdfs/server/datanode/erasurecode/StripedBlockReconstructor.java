@@ -25,6 +25,7 @@ import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.RecoveryTable;
 import org.apache.hadoop.io.erasurecode.rawcoder.InvalidDecodingException;
 import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.util.Time;
+import org.apache.hadoop.util.Timeline;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -63,6 +64,7 @@ class StripedBlockReconstructor extends StripedReconstructor
   @Override
   public void run() {
     MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    Timeline.mark("START\tRecovery");
     timer.start("recovery");
     try {
       timer.start("init");
@@ -101,6 +103,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       cleanup();
     }
     timer.end("recovery");
+    Timeline.mark("END\tRecovery");
   }
 
   @Override
@@ -125,7 +128,9 @@ class StripedBlockReconstructor extends StripedReconstructor
       long readEnd = Time.monotonicNow();
 
       // step2: decode to reconstruct targets
+      Timeline.mark("START\tReconstruct");
       reconstructTargets(toReconstructLen);
+      Timeline.mark("END\tReconstruct");
       long decodeEnd = Time.monotonicNow();
 
       // step3: transfer data

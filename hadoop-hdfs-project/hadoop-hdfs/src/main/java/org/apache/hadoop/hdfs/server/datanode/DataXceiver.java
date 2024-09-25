@@ -72,6 +72,7 @@ import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.util.StopWatch;
 import org.apache.hadoop.util.Time;
+import org.apache.hadoop.util.Timeline;
 import org.apache.zookeeper.server.metric.Metric;
 import org.slf4j.Logger;
 
@@ -629,7 +630,9 @@ class DataXceiver extends Receiver implements Runnable {
       long beginRead = Time.monotonicNow();
       // send data
       timer.start("send_block");
+      Timeline.mark("START\tSend block");
       read = blockSender.sendBlock(out, baseStream, dataXceiverServer.getReadThrottler());
+      Timeline.mark("END\tSend block");
       timer.end("send_block");
       long duration = Time.monotonicNow() - beginRead;
       timer.start("send_check");
@@ -747,7 +750,9 @@ class DataXceiver extends Receiver implements Runnable {
 
       long beginRead = Time.monotonicNow();
       timer.start("send_block");
+      Timeline.mark("START\tSend block trace");
       read = blockTraceSender.sendBlock(out, baseStream, null); // send trace data
+      Timeline.mark("END\tSend block trace");
       timer.end("send_block");
       
       long duration = Time.monotonicNow() - beginRead;
