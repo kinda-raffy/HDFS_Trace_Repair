@@ -186,7 +186,7 @@ class BlockSender implements java.io.Closeable {
   // is likely to result in minimal extra IO.
   private static final long CHUNK_SIZE = 512;
 
-  
+  long beginOffset;  
 
   private static final String EIO_ERROR = "Input/output error";
   /**
@@ -295,7 +295,7 @@ class BlockSender implements java.io.Closeable {
 
       // transferToFully() fails on 32 bit platforms for block sizes >= 2GB,
       // use normal transfer in those cases
-      this.transferToAllowed = false;
+      this.transferToAllowed = datanode.getDnConf().transferToAllowed && (!is32Bit || length <= Integer.MAX_VALUE);;
 
       // Obtain a reference before reading data
       volumeRef = datanode.data.getVolume(block).obtainReference();
@@ -381,6 +381,8 @@ class BlockSender implements java.io.Closeable {
       chunkSize = size;
       checksum = csum;
       checksumSize = checksum.getChecksumSize();
+
+      this.beginOffset = startOffset - (startOffset % chunkSize);
 
       length = length < 0 ? replicaVisibleLength : length;
 
@@ -627,6 +629,9 @@ class BlockSender implements java.io.Closeable {
         // normal transfer
         out.write(buf, headerOff, dataOff + dataLen - headerOff);
       }
+      if (offset == beginOffset) {
+        NetworkTimer.markOutbound(block.getBlockId());
+      }
     } catch (IOException e) {
       if (e instanceof SocketTimeoutException) {
         /*
@@ -820,11 +825,8 @@ class BlockSender implements java.io.Closeable {
 
       while (endOffset > offset && !Thread.currentThread().isInterrupted()) {
         manageOsCache();
-        // timer.start("send_packets");
         long len = sendPacket(pktBuf, maxChunksPerPacket, streamForSendChunks,
             transferTo, throttler);
-        NetworkTimer.markOutbound(block.getBlockId());
-        // timer.end("send_packets");
         offset += len;
         totalRead += len + (numberOfChunks(len) * checksumSize);
         seqno++;
@@ -832,12 +834,9 @@ class BlockSender implements java.io.Closeable {
       // If this thread was interrupted, then it did not send the full block.
       if (!Thread.currentThread().isInterrupted()) {
         try {
-          // timer.start("send_packets");
           sendPacket(pktBuf, maxChunksPerPacket, streamForSendChunks, transferTo,
               throttler);
-          NetworkTimer.markOutbound(block.getBlockId());
           out.flush();
-          // timer.end("send_packets");
         } catch (IOException e) { //socket error
           throw ioeToSocketException(e);
         }

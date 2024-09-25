@@ -526,11 +526,9 @@ class BlockTraceSender implements java.io.Closeable {
             if (!Thread.currentThread().isInterrupted()) {
                 try {
                     // send an empty packet to mark the end of the block
-                    timer.start("send_packets");
                     sendPacketTraceReader(pktBuf, maxChunksPerPacket, out, false,
                             throttler);
                     out.flush();
-                    timer.end("send_packets");
                 } catch (IOException e) { //socket error
                     throw ioeToSocketException(e);
                 }
@@ -562,7 +560,6 @@ class BlockTraceSender implements java.io.Closeable {
      */
     private int[] sendPacketTraceReader(ByteBuffer packetBuffer, int maxChunks, OutputStream out,
                                         boolean transferTo, DataTransferThrottler throttler) throws IOException {
-        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
         long normalDataReadingLen = chunkSize * (long) maxChunks;
         int dataLen = (int) Math.min(endOffset - offset, normalDataReadingLen);
         // dataLen = 16

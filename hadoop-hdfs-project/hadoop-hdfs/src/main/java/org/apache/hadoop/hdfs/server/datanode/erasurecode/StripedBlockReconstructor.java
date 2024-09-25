@@ -67,19 +67,13 @@ class StripedBlockReconstructor extends StripedReconstructor
     Timeline.mark("START\tRecovery");
     timer.start("recovery");
     try {
-      timer.start("init");
       initDecoderIfNecessary();
       initDecodingValidatorIfNecessary();
       getStripedReader().init();
       stripedWriter.init();
-      timer.end("init");
-      // recoveryTimer.mark("Start erasure coding recovery\t");
-      // recoveryTimer.start();
-      // timer.start();
       timer.start("reconstruct");
       reconstruct();
       timer.end("reconstruct");
-      // timer.stop("reconstruct done\t" + Long.toString(getBlockGroup().getBlockId()));
       stripedWriter.endTargetBlocks();
       // Currently we don't check the acks for packets, this is similar as
       // block replication.
@@ -153,9 +147,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       metrics.incrECReconstructionWriteTime(writeEnd - decodeEnd);
       updatePositionInBlock(toReconstructLen);
 
-      timer.start("clear_buffers");
       clearBuffers();
-      timer.end("clear_buffers");
     }
   }
 
@@ -189,9 +181,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       if (isTR) {
         int erasedNodeIndex = getStripedReader().getErasedIndex();
         
-        timer.start("collect_chunk");
         CollectChunkStream reconstructTargetInputs = new CollectChunkStream(nodeCount, DFSUtilClient.CHUNK_SIZE, erasedNodeIndex, recoveryTable);
-        timer.end("collect_chunk");
         reconstructTargetInputs.appendInputs(inputs);
         ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
         
@@ -207,9 +197,7 @@ class StripedBlockReconstructor extends StripedReconstructor
                       ByteBuffer[] outputs) throws IOException {
     MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
     long start = System.nanoTime();
-    timer.start("decode");
     getDecoder().decode(inputs, erasedIndices, outputs);
-    timer.end("decode");
     long end = System.nanoTime();
     this.getDatanode().getMetrics().incrECDecodingTime(end - start);
   }
