@@ -483,7 +483,6 @@ class BlockTraceSender implements java.io.Closeable {
         if (out == null) {
             throw new IOException( "out stream is null" );
         }
-        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
         initialOffset = offset;
         long totalSentCheck = 0;
         long totalRead = 0;
@@ -560,7 +559,7 @@ class BlockTraceSender implements java.io.Closeable {
      */
     private int[] sendPacketTraceReader(ByteBuffer packetBuffer, int maxChunks, OutputStream out,
                                         boolean transferTo, DataTransferThrottler throttler) throws IOException {
-        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+        MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
 
         long normalDataReadingLen = chunkSize * (long) maxChunks;
         int dataLen = (int) Math.min(endOffset - offset, normalDataReadingLen);
@@ -569,9 +568,9 @@ class BlockTraceSender implements java.io.Closeable {
 
         byte[] encoderInput = new byte[dataLen];
         
-        timer.start("Read block");
+        metricTimer.start("Read block");
         replicaInputStreams.readDataFully(encoderInput, 0, dataLen);
-        timer.end("Read block");
+        metricTimer.end("Read block");
 
         Timeline.mark("START\tCompute trace");
         byte[] encoderOutput = repairTraceGeneration(helperNodeIndex, lostNodeIndex, encoderInput, dataLen);

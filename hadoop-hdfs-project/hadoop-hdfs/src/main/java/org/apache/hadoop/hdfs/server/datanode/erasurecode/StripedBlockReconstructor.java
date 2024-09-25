@@ -63,17 +63,17 @@ class StripedBlockReconstructor extends StripedReconstructor
 
   @Override
   public void run() {
-    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
     Timeline.mark("START\tRecovery");
-    timer.start("Recovery");
+    metricTimer.start("Recovery");
     try {
       initDecoderIfNecessary();
       initDecodingValidatorIfNecessary();
       getStripedReader().init();
       stripedWriter.init();
-      timer.start("Reconstruct");
+      metricTimer.start("Reconstruct");
       reconstruct();
-      timer.end("Reconstruct");
+      metricTimer.end("Reconstruct");
       stripedWriter.endTargetBlocks();
       // Currently we don't check the acks for packets, this is similar as
       // block replication.
@@ -96,13 +96,13 @@ class StripedBlockReconstructor extends StripedReconstructor
       stripedWriter.close();
       cleanup();
     }
-    timer.end("Recovery");
+    metricTimer.end("Recovery");
     Timeline.mark("END\tRecovery");
   }
 
   @Override
   void reconstruct() throws IOException {
-    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
     while (getPositionInBlock() < getMaxTargetLength()) {
       DataNodeFaultInjector.get().stripedBlockReconstruction();
       long remaining = getMaxTargetLength() - getPositionInBlock();
@@ -116,9 +116,9 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
       // step1: read from minimum source DNs required for reconstruction.
       // The returned success list is the source DNs we do real read from
-      timer.start("Consume buffer");
+      metricTimer.start("Consume buffer");
       getStripedReader().readMinimumSources(toReconstructLen);
-      timer.end("Consume buffer");
+      metricTimer.end("Consume buffer");
       long readEnd = Time.monotonicNow();
 
       // step2: decode to reconstruct targets
@@ -132,12 +132,12 @@ class StripedBlockReconstructor extends StripedReconstructor
       if (getDatanode().getEcReconstuctWriteThrottler() != null) {
         getDatanode().getEcReconstuctWriteThrottler().throttle(bytesToWrite);
       }
-      timer.start("Write");
+      metricTimer.start("Write");
       if (stripedWriter.transferData2Targets() == 0) {
         String error = "Transfer failed for all targets.";
         throw new IOException(error);
       }
-      timer.end("Write");
+      metricTimer.end("Write");
       long writeEnd = Time.monotonicNow();
 
       // Only successful reconstructions are recorded.

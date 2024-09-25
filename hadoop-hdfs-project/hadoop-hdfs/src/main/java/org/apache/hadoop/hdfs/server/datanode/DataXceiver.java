@@ -591,7 +591,7 @@ class DataXceiver extends Receiver implements Runnable {
       final long length,
       final boolean sendChecksum,
       final CachingStrategy cachingStrategy) throws IOException {
-    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
     previousOpClientName = clientName;
     long read = 0;
     updateCurrentThreadName("Sending block " + block);
@@ -626,9 +626,9 @@ class DataXceiver extends Receiver implements Runnable {
       long beginRead = Time.monotonicNow();
       // send data
       Timeline.mark("START\tSend block");
-      timer.start("Send block");
+      metricTimer.start("Send block");
       read = blockSender.sendBlock(out, baseStream, dataXceiverServer.getReadThrottler());
-      timer.end("Send block");
+      metricTimer.end("Send block");
       Timeline.mark("END\tSend block");
       long duration = Time.monotonicNow() - beginRead;
       if (blockSender.didSendEntireByteRange()) {
@@ -704,7 +704,8 @@ class DataXceiver extends Receiver implements Runnable {
                              final int helperNodeIndex,
                              final int dataBlkNum,
                              final int parityBlkNum) throws IOException {
-    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
+    
     previousOpClientName = clientName;
     long read = 0;
     updateCurrentThreadName("Sending block trace " + block);
@@ -737,11 +738,11 @@ class DataXceiver extends Receiver implements Runnable {
       writeSuccessWithChecksumInfo(blockTraceSender, new DataOutputStream(getOutputStream()));
 
       long beginRead = Time.monotonicNow();
-      timer.start("send_block");
+      metricTimer.start("send_block");
       Timeline.mark("START\tSend block trace");
       read = blockTraceSender.sendBlock(out, baseStream, null); // send trace data
       Timeline.mark("END\tSend block trace");
-      timer.end("send_block");
+      metricTimer.end("send_block");
       
       long duration = Time.monotonicNow() - beginRead;
       if (blockTraceSender.didSendEntireByteRange()) {

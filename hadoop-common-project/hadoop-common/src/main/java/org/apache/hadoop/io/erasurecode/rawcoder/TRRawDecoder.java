@@ -91,7 +91,7 @@ public class TRRawDecoder extends RawErasureDecoder {
 
     @Override
     protected void doDecode(ByteArrayDecodingState decodingState) {
-        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+        MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
         CoderUtil.resetOutputBuffers(
             decodingState.outputs,
             decodingState.outputOffsets,
@@ -107,12 +107,12 @@ public class TRRawDecoder extends RawErasureDecoder {
         for (int i = 0; i < n; i++) {
             bw[i] = recoveryTable.getByte_9_6(i, erasedIndex, 0);
         }
-        timer.start("Decompress trace");
+        metricTimer.start("Decompress trace");
         byte[] decimalTrace = decompressTraceCombined(
                 decodingState.inputs, decodingState.inputOffsets,
                 erasedIndex, decodingState.decodeLength
         );
-        timer.end("Decompress trace");
+        metricTimer.end("Decompress trace");
         byte[] revMem = repairDecimalTrace(erasedIndex);
         constructCj(
                 erasedIndex, decodingState.decodeLength, decimalTrace,

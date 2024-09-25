@@ -781,7 +781,6 @@ class BlockSender implements java.io.Closeable {
     if (out == null) {
       throw new IOException( "out stream is null" );
     }
-    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
 
     initialOffset = offset;
     long totalRead = 0;
