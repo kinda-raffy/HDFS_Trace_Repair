@@ -107,12 +107,12 @@ public class TRRawDecoder extends RawErasureDecoder {
         for (int i = 0; i < n; i++) {
             bw[i] = recoveryTable.getByte_9_6(i, erasedIndex, 0);
         }
-        timer.start("decompress_trace");
+        timer.start("Decompress trace");
         byte[] decimalTrace = decompressTraceCombined(
                 decodingState.inputs, decodingState.inputOffsets,
                 erasedIndex, decodingState.decodeLength
         );
-        timer.end("decompress_trace");
+        timer.end("Decompress trace");
         byte[] revMem = repairDecimalTrace(erasedIndex);
         constructCj(
                 erasedIndex, decodingState.decodeLength, decimalTrace,

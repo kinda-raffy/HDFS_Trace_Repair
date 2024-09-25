@@ -65,15 +65,15 @@ class StripedBlockReconstructor extends StripedReconstructor
   public void run() {
     MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
     Timeline.mark("START\tRecovery");
-    timer.start("recovery");
+    timer.start("Recovery");
     try {
       initDecoderIfNecessary();
       initDecodingValidatorIfNecessary();
       getStripedReader().init();
       stripedWriter.init();
-      timer.start("reconstruct");
+      timer.start("Reconstruct");
       reconstruct();
-      timer.end("reconstruct");
+      timer.end("Reconstruct");
       stripedWriter.endTargetBlocks();
       // Currently we don't check the acks for packets, this is similar as
       // block replication.
@@ -96,7 +96,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       stripedWriter.close();
       cleanup();
     }
-    timer.end("recovery");
+    timer.end("Recovery");
     Timeline.mark("END\tRecovery");
   }
 
@@ -116,9 +116,9 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
       // step1: read from minimum source DNs required for reconstruction.
       // The returned success list is the source DNs we do real read from
-      timer.start("consume_buffer");
+      timer.start("Consume buffer");
       getStripedReader().readMinimumSources(toReconstructLen);
-      timer.end("consume_buffer");
+      timer.end("Consume buffer");
       long readEnd = Time.monotonicNow();
 
       // step2: decode to reconstruct targets
@@ -132,12 +132,12 @@ class StripedBlockReconstructor extends StripedReconstructor
       if (getDatanode().getEcReconstuctWriteThrottler() != null) {
         getDatanode().getEcReconstuctWriteThrottler().throttle(bytesToWrite);
       }
-      timer.start("write");
+      timer.start("Write");
       if (stripedWriter.transferData2Targets() == 0) {
         String error = "Transfer failed for all targets.";
         throw new IOException(error);
       }
-      timer.end("write");
+      timer.end("Write");
       long writeEnd = Time.monotonicNow();
 
       // Only successful reconstructions are recorded.

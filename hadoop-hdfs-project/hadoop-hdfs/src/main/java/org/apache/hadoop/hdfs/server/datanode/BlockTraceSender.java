@@ -569,9 +569,9 @@ class BlockTraceSender implements java.io.Closeable {
 
         byte[] encoderInput = new byte[dataLen];
         
-        timer.start("read_block");
+        timer.start("Read block");
         replicaInputStreams.readDataFully(encoderInput, 0, dataLen);
-        timer.end("read_block");
+        timer.end("Read block");
 
         Timeline.mark("START\tCompute trace");
         byte[] encoderOutput = repairTraceGeneration(helperNodeIndex, lostNodeIndex, encoderInput, dataLen);
@@ -688,9 +688,9 @@ class BlockTraceSender implements java.io.Closeable {
             }
         }
         byte[] compressedRepairTrace = new byte[(int) (encodeLength * (bw / 8.0))];
-        timer.start("compress_trace");
+        timer.start("Compress trace");
         compressTrace(repairTrace, compressedRepairTrace);
-        timer.end("compress_trace");
+        timer.end("Compress trace");
         return compressedRepairTrace;
     }
 

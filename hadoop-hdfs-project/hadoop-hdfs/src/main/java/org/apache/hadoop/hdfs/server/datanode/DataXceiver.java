@@ -625,13 +625,12 @@ class DataXceiver extends Receiver implements Runnable {
 
       long beginRead = Time.monotonicNow();
       // send data
-      timer.start("send_block");
       Timeline.mark("START\tSend block");
+      timer.start("Send block");
       read = blockSender.sendBlock(out, baseStream, dataXceiverServer.getReadThrottler());
+      timer.end("Send block");
       Timeline.mark("END\tSend block");
-      timer.end("send_block");
       long duration = Time.monotonicNow() - beginRead;
-      timer.start("send_check");
       if (blockSender.didSendEntireByteRange()) {
         // If we sent the entire range, then we should expect the client
         // to respond with a Status enum.
@@ -658,13 +657,10 @@ class DataXceiver extends Receiver implements Runnable {
       } else {
         IOUtils.closeStream(out);
       }
-      timer.end("send_check");
-      timer.start("metrics");
       datanode.metrics.incrBytesRead((int) read);
       datanode.metrics.incrBlocksRead();
       datanode.metrics.incrTotalReadTime(duration);
       DFSUtil.addTransferRateMetric(datanode.metrics, read, duration);
-      timer.end("metrics");
     } catch ( SocketException ignored ) {
       LOG.trace("{}:Ignoring exception while serving {} to {}",
           dnR, block, remoteAddress, ignored);
