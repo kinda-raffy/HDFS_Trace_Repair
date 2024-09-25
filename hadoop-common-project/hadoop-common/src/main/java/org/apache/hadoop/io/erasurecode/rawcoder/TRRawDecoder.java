@@ -20,6 +20,7 @@ package org.apache.hadoop.io.erasurecode.rawcoder;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
 import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.RecoveryTable;
+import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.DualBasisTable;
 
 import java.io.IOException;
@@ -90,6 +91,7 @@ public class TRRawDecoder extends RawErasureDecoder {
 
     @Override
     protected void doDecode(ByteArrayDecodingState decodingState) {
+        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
         CoderUtil.resetOutputBuffers(
             decodingState.outputs,
             decodingState.outputOffsets,
@@ -105,10 +107,12 @@ public class TRRawDecoder extends RawErasureDecoder {
         for (int i = 0; i < n; i++) {
             bw[i] = recoveryTable.getByte_9_6(i, erasedIndex, 0);
         }
+        timer.start("decompress_trace");
         byte[] decimalTrace = decompressTraceCombined(
                 decodingState.inputs, decodingState.inputOffsets,
                 erasedIndex, decodingState.decodeLength
         );
+        timer.end("decompress_trace");
         byte[] revMem = repairDecimalTrace(erasedIndex);
         constructCj(
                 erasedIndex, decodingState.decodeLength, decimalTrace,

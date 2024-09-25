@@ -560,18 +560,22 @@ class BlockTraceSender implements java.io.Closeable {
      */
     private int[] sendPacketTraceReader(ByteBuffer packetBuffer, int maxChunks, OutputStream out,
                                         boolean transferTo, DataTransferThrottler throttler) throws IOException {
+        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+
         long normalDataReadingLen = chunkSize * (long) maxChunks;
         int dataLen = (int) Math.min(endOffset - offset, normalDataReadingLen);
         // dataLen = 16
         // encoderOutput <= 16 depends on bw
 
         byte[] encoderInput = new byte[dataLen];
-
+        
+        timer.start("read_block");
         replicaInputStreams.readDataFully(encoderInput, 0, dataLen);
+        timer.end("read_block");
 
-        Timeline.mark("START\tRepiar trace");
+        Timeline.mark("START\tCompute trace");
         byte[] encoderOutput = repairTraceGeneration(helperNodeIndex, lostNodeIndex, encoderInput, dataLen);
-        Timeline.mark("END\tRepiar trace");
+        Timeline.mark("END\tCompute trace");
         // byte[] encoderOutput = new byte[(int) Math.ceil((double) nodeTrace.length / 8)];
         // compressTrace(nodeTrace, encoderOutput);
 
@@ -640,6 +644,8 @@ class BlockTraceSender implements java.io.Closeable {
             int nodeIndex, int erasedNodeIndex,
             byte[] inputs, int encodeLength
     ) {
+        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
+
         byte bw = helperTable.getByte_9_6(nodeIndex, erasedNodeIndex, 0);
         byte[] repairTrace = new byte[bw * encodeLength];
         byte[] H = helperTable.getRow_9_6(nodeIndex, erasedNodeIndex);
@@ -682,7 +688,9 @@ class BlockTraceSender implements java.io.Closeable {
             }
         }
         byte[] compressedRepairTrace = new byte[(int) (encodeLength * (bw / 8.0))];
+        timer.start("compress_trace");
         compressTrace(repairTrace, compressedRepairTrace);
+        timer.end("compress_trace");
         return compressedRepairTrace;
     }
 

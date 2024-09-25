@@ -152,7 +152,6 @@ class StripedBlockReconstructor extends StripedReconstructor
   }
 
   private void reconstructTargets(int toReconstructLen) throws IOException {
-    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
     ByteBuffer[] inputs = getStripedReader().getInputBuffers(toReconstructLen);
     int[] erasedIndices = stripedWriter.getRealTargetIndices();
     ByteBuffer[] outputs = stripedWriter.getRealTargetBuffers(toReconstructLen);
@@ -195,7 +194,6 @@ class StripedBlockReconstructor extends StripedReconstructor
 
   private void decode(ByteBuffer[] inputs, int[] erasedIndices,
                       ByteBuffer[] outputs) throws IOException {
-    MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
     long start = System.nanoTime();
     getDecoder().decode(inputs, erasedIndices, outputs);
     long end = System.nanoTime();
