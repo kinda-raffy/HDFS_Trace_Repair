@@ -738,11 +738,11 @@ class DataXceiver extends Receiver implements Runnable {
       writeSuccessWithChecksumInfo(blockTraceSender, new DataOutputStream(getOutputStream()));
 
       long beginRead = Time.monotonicNow();
-      metricTimer.start("send_block");
+      metricTimer.start("Send block trace");
       Timeline.mark("START\tSend block trace");
       read = blockTraceSender.sendBlock(out, baseStream, null); // send trace data
       Timeline.mark("END\tSend block trace");
-      metricTimer.end("send_block");
+      metricTimer.end("Send block trace");
       
       long duration = Time.monotonicNow() - beginRead;
       if (blockTraceSender.didSendEntireByteRange()) {
