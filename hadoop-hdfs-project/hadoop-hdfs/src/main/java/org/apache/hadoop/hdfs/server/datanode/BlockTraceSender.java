@@ -217,6 +217,8 @@ class BlockTraceSender implements java.io.Closeable {
 
     private byte[] preComputedParity = new byte[256];
 
+    long beginOffset;
+
     /**
      * Constructor
      *
@@ -410,6 +412,7 @@ class BlockTraceSender implements java.io.Closeable {
             }
             // Ensure read offset is position at the beginning of chunk
             offset = startOffset - (startOffset % chunkSize);
+            beginOffset = offset;
             if (length >= 0) {
                 // Ensure endOffset points to end of chunk.
                 long tmpLen = startOffset + length;
@@ -631,6 +634,11 @@ class BlockTraceSender implements java.io.Closeable {
             }
             throw ioeToSocketException(e);
         }
+        
+        if (offset == beginOffset) {
+            NetworkTimer.markOutbound(block.getBlockId());
+        }
+        
         if (throttler != null) {
             // Rebalancing required therefore throttle.
             throttler.throttle(packetLength);

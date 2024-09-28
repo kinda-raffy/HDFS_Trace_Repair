@@ -168,7 +168,6 @@ public class BlockTraceReaderRemote implements BlockReader {
                 (curDataSlice.remaining() == 0 && bytesNeededToFinish > 0)) {
             try (TraceScope ignored = tracer.newScope(
                     "BlockTraceReaderRemote2#readNextPacket(" + blockId + ")")) {
-                // NetworkTimer.markInbound(blockId);
                 readNextPacket();
             }
         }
@@ -236,6 +235,7 @@ public class BlockTraceReaderRemote implements BlockReader {
         // header, which should be empty
         if (bytesNeededToFinish <= 0) {
             readTrailingEmptyPacket();
+            NetworkTimer.markInbound(blockId);
             if (verifyChecksum) {
                 sendReadResult(Status.CHECKSUM_OK);
             } else {
