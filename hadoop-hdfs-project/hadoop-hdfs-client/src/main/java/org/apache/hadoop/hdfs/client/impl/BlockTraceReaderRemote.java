@@ -47,6 +47,7 @@ import org.apache.hadoop.hdfs.protocolPB.PBHelperClient;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.hdfs.server.datanode.CachingStrategy;
 import org.apache.hadoop.hdfs.shortcircuit.ClientMmap;
+import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.HelperTable;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.NetworkTimer;
@@ -125,9 +126,7 @@ public class BlockTraceReaderRemote implements BlockReader {
     private final Tracer tracer;
 
     private final int networkDistance;
-    private int erasedNodeIndex;
-    private int helperNodeIndex;
-    private  HelperTable96Client helperTable = new HelperTable96Client();
+    private final HelperTable helperTable = new HelperTable();
 
     @VisibleForTesting
     public Peer getPeer() {
@@ -301,23 +300,14 @@ public class BlockTraceReaderRemote implements BlockReader {
         this.peerCache = peerCache;
         this.blockId = blockId;
 
-        this.erasedNodeIndex = erasedNodeIndex;
-        this.helperNodeIndex = helperNodeIndex;
-
-
         // The total number of bytes that we need to transfer from the DN is
         // the amount that the user wants (bytesToRead), plus the padding at
         // the beginning in order to chunk-align. Note that the DN may elect
         // to send more than this amount if the read starts/ends mid-chunk.
-        int i = erasedNodeIndex;
-        int j = helperNodeIndex;
+        byte bw = helperTable.getByte_9_6(helperNodeIndex, erasedNodeIndex, 0);
 
-        Object element = helperTable.getElement(j,i);
-        String s = element.toString();
-        String[] elements = s.split(",");
-        int traceBandwidth = Integer.parseInt(elements[0]);
         int ONE_BYTE = 8; // 8 bits;
-        long bytesToReceive = bytesToRead * traceBandwidth / ONE_BYTE;
+        long bytesToReceive = bytesToRead * bw / ONE_BYTE;
         this.bytesNeededToFinish = bytesToReceive + (startOffset - firstChunkOffset);
 
         bytesPerChecksum = this.checksum.getBytesPerChecksum();

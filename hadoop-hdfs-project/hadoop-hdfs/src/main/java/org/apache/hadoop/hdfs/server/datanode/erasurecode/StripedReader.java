@@ -33,7 +33,6 @@ import org.apache.hadoop.hdfs.util.StripedBlockUtil;
 import org.apache.hadoop.hdfs.util.StripedBlockUtil.BlockReadStats;
 import org.apache.hadoop.hdfs.util.StripedBlockUtil.StripingChunkReadResult;
 import org.apache.hadoop.hdfs.DFSUtilClient;
-import org.apache.hadoop.hdfs.client.impl.HelperTable96Client;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
 
 import org.slf4j.Logger;
@@ -90,7 +89,6 @@ class StripedReader {
 
   private final BitSet liveBitSet;
   private final ErasureCodingPolicy ecPolicy;
-  private HelperTable96Client helperTable = new HelperTable96Client();
 
   private StripedReconstructionInfo stripedReconInfo;
 
@@ -309,16 +307,6 @@ class StripedReader {
       ByteBuffer buffer = reader.getReadBuffer();
       paddingBufferToLen(buffer, toReconstructLen);
       inputs[readerIndex] = (ByteBuffer)buffer.flip();
-      ByteBuffer input = inputs[readerIndex];
-      byte[] tempBuffer = input.array();
-
-      int helperNodeIndex = readerIndex;
-      Object element = helperTable.getElement(helperNodeIndex, erasedIndex);
-      String s = element.toString();
-      String[] elements = s.split(",");
-      int traceBandwidth = Integer.parseInt(elements[0]);
-      int ONE_BYTE = 8; // 8 bits.
-      int tempBytesToKeep = (tempBuffer.length) * traceBandwidth / ONE_BYTE;
     }
 
     if (successList.length < dataBlkNum) {
