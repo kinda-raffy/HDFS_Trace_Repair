@@ -71,9 +71,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       initDecodingValidatorIfNecessary();
       getStripedReader().init();
       stripedWriter.init();
-      metricTimer.start("Reconstruct");
       reconstruct();
-      metricTimer.end("Reconstruct");
       stripedWriter.endTargetBlocks();
       // Currently we don't check the acks for packets, this is similar as
       // block replication.
@@ -123,8 +121,10 @@ class StripedBlockReconstructor extends StripedReconstructor
 
       // step2: decode to reconstruct targets
       Timeline.mark("START\tReconstruct");
+      metricTimer.start("Reconstruct");
       reconstructTargets(toReconstructLen);
       Timeline.mark("END\tReconstruct");
+      metricTimer.end("Reconstruct");
       long decodeEnd = Time.monotonicNow();
 
       // step3: transfer data
