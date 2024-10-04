@@ -625,11 +625,11 @@ class DataXceiver extends Receiver implements Runnable {
 
       long beginRead = Time.monotonicNow();
       // send data
-      Timeline.mark("START\tSend block");
+      Timeline.mark("START", "Send block", Thread.currentThread().getId());
       metricTimer.start("Send block");
       read = blockSender.sendBlock(out, baseStream, dataXceiverServer.getReadThrottler());
       metricTimer.end("Send block");
-      Timeline.mark("END\tSend block");
+      Timeline.mark("END", "Send block", Thread.currentThread().getId());
       long duration = Time.monotonicNow() - beginRead;
       if (blockSender.didSendEntireByteRange()) {
         // If we sent the entire range, then we should expect the client
@@ -739,9 +739,9 @@ class DataXceiver extends Receiver implements Runnable {
 
       long beginRead = Time.monotonicNow();
       metricTimer.start("Send block trace");
-      Timeline.mark("START\tSend block trace");
+      Timeline.mark("START", "Send block trace", Thread.currentThread().getId());
       read = blockTraceSender.sendBlock(out, baseStream, null); // send trace data
-      Timeline.mark("END\tSend block trace");
+      Timeline.mark("END", "Send block trace", Thread.currentThread().getId());
       metricTimer.end("Send block trace");
       
       long duration = Time.monotonicNow() - beginRead;

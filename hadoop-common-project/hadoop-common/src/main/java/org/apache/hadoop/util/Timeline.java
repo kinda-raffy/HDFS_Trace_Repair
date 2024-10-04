@@ -8,11 +8,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class Timeline {
-    public static void mark(String label) {
+    public static void mark(String action, String label, long thread_id) {
         long timestamp = System.currentTimeMillis();
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get("timeline.txt"), StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-            writer.write(timestamp + "\t" + label);
+            writer.write(timestamp + "\t" + thread_id + "\t" + action + "\t" + label);
             writer.newLine();
         } catch (IOException e) {
             throw new RuntimeException("Failed to write the event", e);

@@ -64,8 +64,8 @@ class StripedBlockReconstructor extends StripedReconstructor
   @Override
   public void run() {
     MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
-    Timeline.mark("START\tRecovery");
     metricTimer.start("Recovery");
+    Timeline.mark("START", "Recovery", Thread.currentThread().getId());
     try {
       initDecoderIfNecessary();
       initDecodingValidatorIfNecessary();
@@ -94,8 +94,8 @@ class StripedBlockReconstructor extends StripedReconstructor
       stripedWriter.close();
       cleanup();
     }
+    Timeline.mark("END", "Recovery", Thread.currentThread().getId());
     metricTimer.end("Recovery");
-    Timeline.mark("END\tRecovery");
   }
 
   @Override
@@ -120,11 +120,11 @@ class StripedBlockReconstructor extends StripedReconstructor
       long readEnd = Time.monotonicNow();
 
       // step2: decode to reconstruct targets
-      Timeline.mark("START\tReconstruct");
+      Timeline.mark("START", "Reconstruct", Thread.currentThread().getId());
       metricTimer.start("Reconstruct");
       reconstructTargets(toReconstructLen);
-      Timeline.mark("END\tReconstruct");
       metricTimer.end("Reconstruct");
+      Timeline.mark("END", "Reconstruct", Thread.currentThread().getId());
       long decodeEnd = Time.monotonicNow();
 
       // step3: transfer data
