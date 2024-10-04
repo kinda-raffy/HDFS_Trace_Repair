@@ -638,7 +638,7 @@ class BlockTraceSender implements java.io.Closeable {
         }
         
         if (offset == beginOffset) {
-            NetworkTimer.markOutbound(block.getBlockId());
+            NetworkTimer.mark(block.getBlockId());
         }
         
         if (throttler != null) {

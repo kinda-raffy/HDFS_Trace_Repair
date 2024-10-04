@@ -630,7 +630,7 @@ class BlockSender implements java.io.Closeable {
         out.write(buf, headerOff, dataOff + dataLen - headerOff);
       }
       if (offset == beginOffset) {
-        NetworkTimer.markOutbound(block.getBlockId());
+        NetworkTimer.mark(block.getBlockId());
       }
     } catch (IOException e) {
       if (e instanceof SocketTimeoutException) {

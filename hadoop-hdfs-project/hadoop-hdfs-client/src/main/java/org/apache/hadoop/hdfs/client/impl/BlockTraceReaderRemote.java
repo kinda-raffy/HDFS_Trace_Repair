@@ -234,7 +234,7 @@ public class BlockTraceReaderRemote implements BlockReader {
         // header, which should be empty
         if (bytesNeededToFinish <= 0) {
             readTrailingEmptyPacket();
-            NetworkTimer.markInbound(blockId);
+            NetworkTimer.mark(blockId);
             if (verifyChecksum) {
                 sendReadResult(Status.CHECKSUM_OK);
             } else {
