@@ -22,10 +22,19 @@ public class MetricTimer {
         }
     }
 
-    public void start(String label) {
+    public void start(String label, String... metadata) {
         long timestamp = System.currentTimeMillis();
+        String line = timestamp + "\t" + thread + "\tSTART\t" + label;
+
+        if (metadata.length > 0) {
+            line += "\t";
+            for (String m : metadata) {
+                line += m;
+            }
+        }
+
         try {
-            writer.write(timestamp + "\t" + thread + "\tSTART\t" + label);
+            writer.write(line);
             writer.newLine();
             writer.flush();
         } catch (IOException e) {
@@ -33,10 +42,19 @@ public class MetricTimer {
         }
     }
 
-    public void end(String label) {
+    public void end(String label, String... metadata) {
         long timestamp = System.currentTimeMillis();
+        String line = timestamp + "\t" + thread + "\tEND\t" + label;
+
+        if (metadata.length > 0) {
+            line += "\t";
+            for (String m : metadata) {
+                line += m;
+            }
+        }
+        
         try {
-            writer.write(timestamp + "\t" + thread + "\tEND\t" + label);
+            writer.write(line);
             writer.newLine();
             writer.flush();
         } catch (IOException e) {
