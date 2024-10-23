@@ -739,9 +739,7 @@ class DataXceiver extends Receiver implements Runnable {
 
       long beginRead = Time.monotonicNow();
       metricTimer.start("Send block trace");
-      Timeline.mark("START", "Send block trace", Thread.currentThread().getId());
       read = blockTraceSender.sendBlock(out, baseStream, null); // send trace data
-      Timeline.mark("END", "Send block trace", Thread.currentThread().getId());
       metricTimer.end("Send block trace");
       
       long duration = Time.monotonicNow() - beginRead;
