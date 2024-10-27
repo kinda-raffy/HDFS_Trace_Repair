@@ -133,12 +133,10 @@ class StripedBlockReconstructor extends StripedReconstructor
         getDatanode().getEcReconstuctWriteThrottler().throttle(bytesToWrite);
       }
       metricTimer.start("Write");
-      Timeline.mark("START", "Write", Thread.currentThread().getId());
       if (stripedWriter.transferData2Targets() == 0) {
         String error = "Transfer failed for all targets.";
         throw new IOException(error);
       }
-      Timeline.mark("END", "Write", Thread.currentThread().getId());
       metricTimer.end("Write");
       long writeEnd = Time.monotonicNow();
 
