@@ -625,11 +625,9 @@ class DataXceiver extends Receiver implements Runnable {
 
       long beginRead = Time.monotonicNow();
       // send data
-      Timeline.mark("START", "Send block", Thread.currentThread().getId());
       metricTimer.start("Send block");
       read = blockSender.sendBlock(out, baseStream, dataXceiverServer.getReadThrottler());
       metricTimer.end("Send block");
-      Timeline.mark("END", "Send block", Thread.currentThread().getId());
       long duration = Time.monotonicNow() - beginRead;
       if (blockSender.didSendEntireByteRange()) {
         // If we sent the entire range, then we should expect the client
