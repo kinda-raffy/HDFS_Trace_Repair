@@ -114,9 +114,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
       // step1: read from minimum source DNs required for reconstruction.
       // The returned success list is the source DNs we do real read from
-      metricTimer.start("Consume buffer");
       getStripedReader().readMinimumSources(toReconstructLen);
-      metricTimer.end("Consume buffer");
       long readEnd = Time.monotonicNow();
 
       // step2: decode to reconstruct targets
