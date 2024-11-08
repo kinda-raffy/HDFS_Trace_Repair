@@ -591,7 +591,6 @@ class DataXceiver extends Receiver implements Runnable {
       final long length,
       final boolean sendChecksum,
       final CachingStrategy cachingStrategy) throws IOException {
-    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
     previousOpClientName = clientName;
     long read = 0;
     updateCurrentThreadName("Sending block " + block);
@@ -625,9 +624,7 @@ class DataXceiver extends Receiver implements Runnable {
 
       long beginRead = Time.monotonicNow();
       // send data
-      metricTimer.start("Send block");
       read = blockSender.sendBlock(out, baseStream, dataXceiverServer.getReadThrottler());
-      metricTimer.end("Send block");
       long duration = Time.monotonicNow() - beginRead;
       if (blockSender.didSendEntireByteRange()) {
         // If we sent the entire range, then we should expect the client
@@ -702,8 +699,6 @@ class DataXceiver extends Receiver implements Runnable {
                              final int helperNodeIndex,
                              final int dataBlkNum,
                              final int parityBlkNum) throws IOException {
-    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
-    
     previousOpClientName = clientName;
     long read = 0;
     updateCurrentThreadName("Sending block trace " + block);
@@ -736,9 +731,7 @@ class DataXceiver extends Receiver implements Runnable {
       writeSuccessWithChecksumInfo(blockTraceSender, new DataOutputStream(getOutputStream()));
 
       long beginRead = Time.monotonicNow();
-      metricTimer.start("Send block trace");
       read = blockTraceSender.sendBlock(out, baseStream, null); // send trace data
-      metricTimer.end("Send block trace");
       
       long duration = Time.monotonicNow() - beginRead;
       if (blockTraceSender.didSendEntireByteRange()) {
