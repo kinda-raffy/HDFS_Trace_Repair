@@ -152,6 +152,8 @@ class StripedBlockReconstructor extends StripedReconstructor
     int[] erasedIndices = stripedWriter.getRealTargetIndices();
     ByteBuffer[] outputs = stripedWriter.getRealTargetBuffers(toReconstructLen);
 
+    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
+
     // Validation is not tested to work
     if (isValidationEnabled()) {
       markBuffers(inputs);
@@ -176,9 +178,11 @@ class StripedBlockReconstructor extends StripedReconstructor
       if (isTR) {
         int erasedNodeIndex = getStripedReader().getErasedIndex();
         
+        metricTimer.start("Collect chunks");
         CollectChunkStream reconstructTargetInputs = new CollectChunkStream(nodeCount, DFSUtilClient.CHUNK_SIZE, erasedNodeIndex, recoveryTable);
         reconstructTargetInputs.appendInputs(inputs);
         ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
+        metricTimer.end("Collect chunks");
         
         decode(decoderInputs, erasedIndices, outputs);
       } else {
