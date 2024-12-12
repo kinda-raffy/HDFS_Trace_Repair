@@ -38,11 +38,12 @@ public class TRRawDecoder extends RawErasureDecoder {
         preCompute();
         this.recoveryTable = new RecoveryTable(coderOptions.getNumAllUnits());
         this.bw = new byte[coderOptions.getNumAllUnits()];
+        this.dualBasisTable = new DualBasisTable(coderOptions.getNumAllUnits());
     }
 
     private final RecoveryTable recoveryTable;
 
-    private final DualBasisTable dualBasisTable = new DualBasisTable();
+    private final DualBasisTable dualBasisTable;
 
     private byte[] preComputedParity = new byte[256];
 
@@ -223,7 +224,7 @@ public class TRRawDecoder extends RawErasureDecoder {
 
     protected byte[] repairDecimalTrace(int erasedIdx) {
         byte[] revMem = new byte[getNumAllUnits() * 256];
-        byte[] erasedDualBasis = dualBasisTable.getRow_9_6(erasedIdx);
+        byte[] erasedDualBasis = dualBasisTable.getRow(erasedIdx);
         for (int i = 0; i < getNumAllUnits(); i++) {
             if (i != erasedIdx) {
                 byte[] R = recoveryTable.getRow(i, erasedIdx);

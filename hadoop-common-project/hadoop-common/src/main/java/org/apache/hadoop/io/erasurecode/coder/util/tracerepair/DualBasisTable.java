@@ -1,6 +1,31 @@
 package org.apache.hadoop.io.erasurecode.coder.util.tracerepair;
 
 public class DualBasisTable {
+
+    private int totalBlkNum;
+
+    public DualBasisTable(int totalBlkNum) {
+        this.totalBlkNum = totalBlkNum;
+    }
+
+    public byte[] getRow(int row) {
+        switch (this.totalBlkNum) {
+            case 9:
+                return Scheme_9_6[row];
+            default:
+                throw new RuntimeException("Invalid policy is used.");
+        }
+    }
+
+    public byte getByte(int row, int column) {
+        switch (this.totalBlkNum) {
+            case 9:
+                return Scheme_9_6[row][column];
+            default:
+                throw new RuntimeException("Invalid policy is used.");
+        }
+    }
+
     private final byte[][] Scheme_9_6 = {
         {78, -109, -44, 102, 26, -82, -72, -101},
         {-127, -115, -59, 81, 107, -27, 10, 79},
@@ -12,12 +37,4 @@ public class DualBasisTable {
         {123, 4, 33, 9, 124, 28, -14, 119},
         { -32, 39, 117, 52, -33, -1, 96, 124 }
     };
-
-    public byte[] getRow_9_6(int row) {
-        return Scheme_9_6[row];
-    }
-
-    public byte getByte_9_6(int row, int column) {
-        return Scheme_9_6[row][column];
-    }
 }
