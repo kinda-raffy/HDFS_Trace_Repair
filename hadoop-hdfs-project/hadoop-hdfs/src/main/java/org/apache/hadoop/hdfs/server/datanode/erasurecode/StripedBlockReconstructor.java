@@ -18,7 +18,6 @@
 package org.apache.hadoop.hdfs.server.datanode.erasurecode;
 
 import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.hdfs.DFSUtilClient;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeFaultInjector;
 import org.apache.hadoop.hdfs.server.datanode.metrics.DataNodeMetrics;
 import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.RecoveryTable;
@@ -45,6 +44,7 @@ class StripedBlockReconstructor extends StripedReconstructor
   ByteBuffer[] totalByteBuffers = new ByteBuffer[nodeCount];
   private StripedWriter stripedWriter;
   private boolean isTR = false;
+  CollectChunkStream reconstructTargetInputs;
 
   StripedBlockReconstructor(ErasureCodingWorker worker,
                             StripedReconstructionInfo stripedReconInfo) {
@@ -103,6 +103,10 @@ class StripedBlockReconstructor extends StripedReconstructor
 
   @Override
   void reconstruct() throws IOException {
+    if (isTR) {
+      int erasedNodeIndex = getStripedReader().getErasedIndex();
+      reconstructTargetInputs = new CollectChunkStream(nodeCount, getMaxTargetLength(), erasedNodeIndex, recoveryTable);
+    }
     MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
     while (getPositionInBlock() < getMaxTargetLength()) {
       DataNodeFaultInjector.get().stripedBlockReconstruction();
@@ -179,14 +183,12 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
     } else {
       if (isTR) {
-        int erasedNodeIndex = getStripedReader().getErasedIndex();
         for (int i = 0; i < inputs.length; i++) {
           if (i != 1) {
             TRTraceSnapshot.mark("RN" + getPositionInBlock(), i, inputs[i].array());
           }
         }
         metricTimer.start("Collect chunks");
-        CollectChunkStream reconstructTargetInputs = new CollectChunkStream(nodeCount, DFSUtilClient.CHUNK_SIZE, erasedNodeIndex, recoveryTable);
         reconstructTargetInputs.appendInputs(inputs);
         ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
         metricTimer.end("Collect chunks");
@@ -234,8 +236,8 @@ class StripedBlockReconstructor extends StripedReconstructor
     int[] writeLengths;
     byte[][] totalInputs;
 
-    CollectChunkStream(int nodeCount, int chunkSize, int erasedNodeIndex, RecoveryTable recoveryTable) {
-      this.totalInputs = new byte[nodeCount][chunkSize];
+    CollectChunkStream(int nodeCount, long maxTargetLength, int erasedNodeIndex, RecoveryTable recoveryTable) {
+      this.totalInputs = new byte[nodeCount][(int) maxTargetLength];
       this.writeLengths = new int[nodeCount];
       this.nodeCount = nodeCount;
       this.erasedNodeIndex = erasedNodeIndex;
