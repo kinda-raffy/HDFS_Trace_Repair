@@ -24,6 +24,9 @@ make-build-debug
 ECLog/
 TestLog/
 .hprof
+hadoop-hdfs-project/hadoop-hdfs/metrics.txt
+hadoop-hdfs-project/hadoop-hdfs/timeline.txt
+hadoop-hdfs-project/hadoop-hdfs/traffic.txt
 
 # Filesystem contract test options and credentials
 auth-keys.xml
