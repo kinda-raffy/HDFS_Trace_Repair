@@ -134,7 +134,7 @@ public class TestReconstructStripedFile {
     dataBlkNum = ecPolicy.getNumDataUnits();
     parityBlkNum = ecPolicy.getNumParityUnits();
     cellSize = ecPolicy.getCellSize();
-    blockSize = cellSize * 3;
+    blockSize = 5 * 1024 * 1024;
     groupSize = dataBlkNum + parityBlkNum;
     dnNum = groupSize + parityBlkNum;
 
@@ -386,7 +386,7 @@ public class TestReconstructStripedFile {
   private static void writeFile(DistributedFileSystem fs, String fileName,
                                 int fileLen) throws Exception {
     final byte[] data = new byte[fileLen];
-    // Arrays.fill(data, (byte) 78);
+    // Arrays.fill(data, (byte) 1);
     new Random().nextBytes(data);
     DFSTestUtil.writeFile(fs, new Path(fileName), data);
     StripedFileTestUtil.waitBlockGroupsReported(fs, fileName);
@@ -395,7 +395,7 @@ public class TestReconstructStripedFile {
   @Test(timeout = 1200000)
   public void testRecoverOneDataBlockSmallFile() throws Exception {
     // int fileLen = 6 * 1024 * 1024; // 6 * 1024 * 1024: to make the rounding byte
-    int fileLen = 48 * 1024 * 1024;
+    int fileLen = 6 * blockSize;
     assertFileBlocksReconstructionTraceRepair("/testRecoverOneDataBlock", fileLen,
             ReconstructionType.DataOnly, 1);
   }
