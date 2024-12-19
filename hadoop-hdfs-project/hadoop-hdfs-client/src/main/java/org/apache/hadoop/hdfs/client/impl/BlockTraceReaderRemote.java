@@ -126,7 +126,7 @@ public class BlockTraceReaderRemote implements BlockReader {
     private final Tracer tracer;
 
     private final int networkDistance;
-    private final HelperTable helperTable = new HelperTable();
+    private final HelperTable helperTable;
 
     @VisibleForTesting
     public Peer getPeer() {
@@ -285,7 +285,7 @@ public class BlockTraceReaderRemote implements BlockReader {
                                      long bytesToRead, Peer peer,
                                      DatanodeID datanodeID, PeerCache peerCache,
                                      Tracer tracer,
-                                     int networkDistance, int erasedNodeIndex, int helperNodeIndex) {
+                                     int networkDistance, int erasedNodeIndex, int helperNodeIndex, int totalBlkNum) {
         // Path is used only for printing block and file information in debug
         this.peer = peer;
         this.datanodeID = datanodeID;
@@ -304,7 +304,8 @@ public class BlockTraceReaderRemote implements BlockReader {
         // the amount that the user wants (bytesToRead), plus the padding at
         // the beginning in order to chunk-align. Note that the DN may elect
         // to send more than this amount if the read starts/ends mid-chunk.
-        byte bw = helperTable.getByte_9_6(helperNodeIndex, erasedNodeIndex, 0);
+        this.helperTable = new HelperTable(totalBlkNum);
+        byte bw = helperTable.getByte(helperNodeIndex, erasedNodeIndex, 0);
 
         int ONE_BYTE = 8; // 8 bits;
         long bytesToReceive = bytesToRead * bw / ONE_BYTE;
@@ -460,7 +461,7 @@ public class BlockTraceReaderRemote implements BlockReader {
 
         return new BlockTraceReaderRemote(file, block.getBlockId(), checksum,
                 verifyChecksum, startOffset, firstChunkOffset, len, peer, datanodeID,
-                peerCache, tracer, networkDistance, erasedNodeIndex, helperNodeIndex);
+                peerCache, tracer, networkDistance, erasedNodeIndex, helperNodeIndex, dataBlkNum + parityBlkNum);
     }
 
     static void checkSuccess(

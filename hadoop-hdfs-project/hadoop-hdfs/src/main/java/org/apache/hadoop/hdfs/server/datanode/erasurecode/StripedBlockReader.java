@@ -44,7 +44,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.concurrent.Callable;
 
@@ -140,6 +139,7 @@ class StripedBlockReader {
   }
 
   private BlockReader createBlockReader(long offsetInBlock) {
+    
     if (offsetInBlock >= block.getNumBytes()) {
       return null;
     }

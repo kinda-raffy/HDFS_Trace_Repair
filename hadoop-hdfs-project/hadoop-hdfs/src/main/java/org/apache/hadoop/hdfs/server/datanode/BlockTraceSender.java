@@ -205,7 +205,7 @@ class BlockTraceSender implements java.io.Closeable {
     /** The index of this helper node of this trace repair erasure code setting*/
     private final int helperNodeIndex;
 
-    private final HelperTable helperTable = new HelperTable();
+    private final HelperTable helperTable;
 
     @VisibleForTesting
     static long CACHE_DROP_INTERVAL_BYTES = 1024 * 1024; // 1MB
@@ -241,6 +241,7 @@ class BlockTraceSender implements java.io.Closeable {
         InputStream blockIn = null;
         DataInputStream checksumIn = null;
         this.fileIoProvider = datanode.getFileIoProvider();
+        this.helperTable = new HelperTable(dataBlkNum + parityBlkNum);
         try {
             this.block = block;
             this.corruptChecksumOk = corruptChecksumOk;
@@ -597,7 +598,7 @@ class BlockTraceSender implements java.io.Closeable {
         packetBuffer.put(encoderOutput, 0, encoderOutput.length);
         // this method returns the byte array that backs this buffer
         byte[] buf = packetBuffer.array(); // the byte array buf copied with the contents of the pkt buffer
-        byte bw = helperTable.getByte_9_6(helperNodeIndex, lostNodeIndex, 0);
+
         try {
             // this method writes len bytes from the specified byte array starting at offset off to this output stream.
             //args
@@ -655,9 +656,9 @@ class BlockTraceSender implements java.io.Closeable {
     ) {
         MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
 
-        byte bw = helperTable.getByte_9_6(nodeIndex, erasedNodeIndex, 0);
+        byte bw = helperTable.getByte(nodeIndex, erasedNodeIndex, 0);
         byte[] repairTrace = new byte[bw * encodeLength];
-        byte[] H = helperTable.getRow_9_6(nodeIndex, erasedNodeIndex);
+        byte[] H = helperTable.getRow(nodeIndex, erasedNodeIndex);
         byte[] Hij = new byte[H.length - 1];
         System.arraycopy(H, 1, Hij, 0, Hij.length);
         int idx = 0;

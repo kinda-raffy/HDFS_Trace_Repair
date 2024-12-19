@@ -39,7 +39,7 @@ import java.util.Arrays;
 @InterfaceAudience.Private
 class StripedBlockReconstructor extends StripedReconstructor
         implements Runnable {
-  private final RecoveryTable recoveryTable = new RecoveryTable();
+  private final RecoveryTable recoveryTable;
   private final int nodeCount = getStripedReader().numberOfInputs();
   ByteBuffer[] totalByteBuffers = new ByteBuffer[nodeCount];
   private StripedWriter stripedWriter;
@@ -48,6 +48,8 @@ class StripedBlockReconstructor extends StripedReconstructor
   StripedBlockReconstructor(ErasureCodingWorker worker,
                             StripedReconstructionInfo stripedReconInfo) {
     super(worker, stripedReconInfo);
+    int totalBlkNum = stripedReconInfo.getEcPolicy().getNumDataUnits() + stripedReconInfo.getEcPolicy().getNumParityUnits();
+    this.recoveryTable = new RecoveryTable(totalBlkNum);
 
     stripedWriter = new StripedWriter(this, getDatanode(),
             getConf(), stripedReconInfo);
@@ -213,7 +215,7 @@ class StripedBlockReconstructor extends StripedReconstructor
     byte[] bandwidth = new byte[nodeCount];
     int erasedNodeIndex = getStripedReader().getErasedIndex();
     for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
-      bandwidth[nodeIndex] = recoveryTable.getByte_9_6(nodeIndex, erasedNodeIndex, 0);
+      bandwidth[nodeIndex] = recoveryTable.getByte(nodeIndex, erasedNodeIndex, 0);
     }
     return Arrays.toString(bandwidth);
   }
@@ -236,7 +238,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       this.bufferReadPointers = new int[nodeCount];
       this.bandwidth = new byte[nodeCount];
       for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
-        bandwidth[nodeIndex] = recoveryTable.getByte_9_6(nodeIndex, erasedNodeIndex, 0);
+        bandwidth[nodeIndex] = recoveryTable.getByte(nodeIndex, erasedNodeIndex, 0);
       }
     }
     void appendInputs(ByteBuffer[] receivedByteBuffers) {

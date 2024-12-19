@@ -1,6 +1,30 @@
 package org.apache.hadoop.io.erasurecode.coder.util.tracerepair;
 
 public class RecoveryTable {
+    private int totalBlkNum;
+
+    public RecoveryTable(int totalBlkNum) {
+        this.totalBlkNum = totalBlkNum;
+    }
+
+    public byte[] getRow(int block, int row) {
+        switch (totalBlkNum) {
+            case 9:
+                return Scheme_9_6[block][row];
+            default:
+                throw new RuntimeException("Invalid policy is used.");
+        }
+    }
+
+    public byte getByte(int block, int row, int column) {
+        switch (totalBlkNum) {
+            case 9:
+                return Scheme_9_6[block][row][column];
+            default:
+                throw new RuntimeException("Invalid policy is used.");
+        }
+    }
+
     private final byte[][][] Scheme_9_6 = {
         {
             {0, 0, 0, 0, 0, 0, 0, 0, 0}, {4, 0, 0, 8, 2, 0, 0, 11, 7},
@@ -24,11 +48,15 @@ public class RecoveryTable {
             {4, 4, 12, 12, 8, 2, 5, 0, 0}
         },
         {
-            {4, 0, 0, 1, 5, 6, 8, 15, 3}, {6, 2, 10, 40, 12, 45, 18, 23, 33},
-            {4, 2, 4, 0, 0, 1, 14, 5, 8}, {0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {6, 8, 4, 10, 11, 42, 53, 9, 14}, {4, 2, 6, 6, 4, 1, 12, 0, 0},
-            {4, 8, 4, 0, 0, 0, 0, 2, 13}, {4, 2, 8, 0, 0, 9, 4, 8, 10},
-            {4, 1, 2, 2, 3, 8, 13, 8, 13}
+            { 4, 0, 0, 1, 5, 6, 8, 15, 3 },
+            { 6, 2, 10, 40, 12, 45, 18, 23, 33 },
+            { 4, 2, 4, 0, 0, 1, 14, 5, 8 },
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 6, 8, 4, 10, 11, 42, 53, 9, 14 },
+            { 4, 2, 6, 6, 4, 1, 12, 0, 0 },
+            { 4, 8, 4, 0, 0, 0, 0, 2, 13 },
+            { 4, 2, 8, 0, 0, 9, 4, 8, 10 },
+            { 4, 1, 2, 2, 3, 8, 13, 8, 13 }
         },
         {
             {2, 1, 2, 0, 0, 2, 3, 2, 3}, {2, 0, 0, 0, 0, 1, 2, 1, 2},
@@ -66,12 +94,4 @@ public class RecoveryTable {
             {0, 0, 0, 0, 0, 0, 0, 0, 0}
         }
     };
-
-    public byte[] getRow_9_6(int block, int row) {
-        return Scheme_9_6[block][row];
-    }
-
-    public byte getByte_9_6(int block, int row, int column) {
-        return Scheme_9_6[block][row][column];
-    }
 }

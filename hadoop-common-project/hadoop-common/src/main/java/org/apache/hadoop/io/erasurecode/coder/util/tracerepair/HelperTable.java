@@ -1,6 +1,30 @@
 package org.apache.hadoop.io.erasurecode.coder.util.tracerepair;
 
 public class HelperTable {
+    private int totalBlkNum;
+
+    public HelperTable(int totalBlkNum) {
+        this.totalBlkNum = totalBlkNum;
+    }
+
+    public byte[] getRow(int block, int row) {
+        switch (this.totalBlkNum) {
+            case 9:
+                return Scheme_9_6[block][row];
+            default:
+                throw new RuntimeException("Invalid policy is used.");
+        }
+    }
+
+    public byte getByte(int block, int row, int column) {
+        switch (this.totalBlkNum) {
+            case 9:
+                return Scheme_9_6[block][row][column];
+            default:
+                throw new RuntimeException("Invalid policy is used.");
+        }
+    }
+
     private final byte[][][] Scheme_9_6 = {
         {
             {0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -102,12 +126,4 @@ public class HelperTable {
             {0, 0, 0, 0, 0, 0, 0, 0, 0}
         }
     };
-
-    public byte[] getRow_9_6(int block, int row) {
-        return Scheme_9_6[block][row];
-    }
-
-    public byte getByte_9_6(int block, int row, int column) {
-        return Scheme_9_6[block][row][column];
-    }
 }

@@ -21,7 +21,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.hadoop.HadoopIllegalArgumentException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.io.erasurecode.ErasureCoderOptions;
-import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.HelperTable;
 import org.apache.hadoop.io.erasurecode.rawcoder.util.DumpUtil;
 import org.apache.hadoop.io.erasurecode.rawcoder.util.RSUtil;
 
@@ -42,8 +41,6 @@ public class TRRawEncoder extends RawErasureEncoder {
     private byte[] gfTables;
 
     private byte[] preComputedParity = new byte[256];
-
-    private final HelperTable helperTable = new HelperTable();
 
     public TRRawEncoder(ErasureCoderOptions coderOptions) {
         super(coderOptions);
@@ -155,33 +152,6 @@ public class TRRawEncoder extends RawErasureEncoder {
             repairTraceGeneration(activeNodeIndex, inputIndex, erasedNodeIndex,
                 dataParityInputs, encodingState);
         }*/
-    }
-
-    protected void repairTraceGeneration(
-        int nodeIndex, int inputIndex, int erasedNodeIndex,
-        byte[][] inputs, ByteArrayEncodingState encodeState
-    ) {
-        assert(nodeIndex != erasedNodeIndex);
-        byte bw = helperTable.getByte_9_6(nodeIndex, erasedNodeIndex, 0);
-        byte[] repairTrace = new byte[bw * encodeState.encodeLength];
-        byte[] H = helperTable.getRow_9_6(nodeIndex, erasedNodeIndex);
-        byte[] Hij = new byte[H.length - 1];
-        System.arraycopy(H, 1, Hij, 0, Hij.length);
-        int idx = 0;
-        for (int a = 0; a < bw; a++) {
-            for (int testCodeWord = 0; testCodeWord < encodeState.encodeLength; testCodeWord++) {
-                byte parityCalculation = (byte) (Hij[a] & (inputs[nodeIndex][testCodeWord]));
-                int parityIndex = parityCalculation & 0xFF;
-                repairTrace[idx++] = preComputedParity[parityIndex];
-            }
-        }
-
-        int chunkLength = encodeState.encodeLength;
-        int requiredWriteLength = bw * chunkLength;
-        int totalWriteLength = chunkLength * 8;
-
-        assert(requiredWriteLength <= totalWriteLength);
-        encodeTrace(repairTrace, encodeState.outputs[inputIndex]);
     }
 
     public static void encodeTrace(byte[] source, byte[] output) {

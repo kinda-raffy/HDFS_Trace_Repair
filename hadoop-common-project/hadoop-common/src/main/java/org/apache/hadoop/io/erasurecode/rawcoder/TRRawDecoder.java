@@ -36,15 +36,17 @@ public class TRRawDecoder extends RawErasureDecoder {
     public TRRawDecoder(ErasureCoderOptions coderOptions) {
         super(coderOptions);
         preCompute();
+        this.recoveryTable = new RecoveryTable(coderOptions.getNumAllUnits());
+        this.bw = new byte[coderOptions.getNumAllUnits()];
     }
 
-    private final RecoveryTable recoveryTable = new RecoveryTable();
+    private final RecoveryTable recoveryTable;
 
     private final DualBasisTable dualBasisTable = new DualBasisTable();
 
     private byte[] preComputedParity = new byte[256];
 
-    private byte[] bw = new byte[9];
+    private byte[] bw;
 
     byte[] masks = {(byte) 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
 
@@ -105,7 +107,7 @@ public class TRRawDecoder extends RawErasureDecoder {
         byte[][] binaryTraces = new byte[n][];
         // [NOTE] Calculate bandwidth.
         for (int i = 0; i < n; i++) {
-            bw[i] = recoveryTable.getByte_9_6(i, erasedIndex, 0);
+            bw[i] = recoveryTable.getByte(i, erasedIndex, 0);
         }
         metricTimer.start("Decompress trace");
         byte[] decimalTrace = decompressTraceCombined(
@@ -224,7 +226,7 @@ public class TRRawDecoder extends RawErasureDecoder {
         byte[] erasedDualBasis = dualBasisTable.getRow_9_6(erasedIdx);
         for (int i = 0; i < getNumAllUnits(); i++) {
             if (i != erasedIdx) {
-                byte[] R = recoveryTable.getRow_9_6(i, erasedIdx);
+                byte[] R = recoveryTable.getRow(i, erasedIdx);
                 byte[] Rij = new byte[R.length - 1];
                 System.arraycopy(R, 1, Rij, 0, Rij.length);
                 for (int b = 0; b < 256; b++) {
