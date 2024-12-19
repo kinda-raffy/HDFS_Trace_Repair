@@ -579,6 +579,9 @@ class BlockTraceSender implements java.io.Closeable {
         Timeline.mark("START", "Compute trace", Thread.currentThread().getId());
         metricTimer.start("Compute trace", Long.toString(block.getBlockId()));
         byte[] encoderOutput = repairTraceGeneration(helperNodeIndex, lostNodeIndex, encoderInput, dataLen);
+        if (dataLen != 0 ){
+            TRTraceSnapshot.mark("HN" + offset, helperNodeIndex, encoderOutput);
+        }
         metricTimer.end("Compute trace", Long.toString(block.getBlockId()));
         Timeline.mark("END", "Compute trace", Thread.currentThread().getId());
         // byte[] encoderOutput = new byte[(int) Math.ceil((double) nodeTrace.length / 8)];
