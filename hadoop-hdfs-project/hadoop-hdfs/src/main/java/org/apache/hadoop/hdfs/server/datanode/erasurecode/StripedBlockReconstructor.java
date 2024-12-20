@@ -23,7 +23,6 @@ import org.apache.hadoop.hdfs.server.datanode.metrics.DataNodeMetrics;
 import org.apache.hadoop.io.erasurecode.coder.util.tracerepair.RecoveryTable;
 import org.apache.hadoop.io.erasurecode.rawcoder.InvalidDecodingException;
 import org.apache.hadoop.util.MetricTimer;
-import org.apache.hadoop.util.TRTraceSnapshot;
 import org.apache.hadoop.util.Time;
 import org.apache.hadoop.util.Timeline;
 
@@ -183,11 +182,6 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
     } else {
       if (isTR) {
-        for (int i = 0; i < inputs.length; i++) {
-          if (i != 1) {
-            TRTraceSnapshot.mark("RN" + getPositionInBlock(), i, inputs[i].array());
-          }
-        }
         metricTimer.start("Collect chunks");
         reconstructTargetInputs.appendInputs(inputs);
         ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
