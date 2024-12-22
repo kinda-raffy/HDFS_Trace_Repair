@@ -126,7 +126,11 @@ class StripedBlockReconstructor extends StripedReconstructor
       // step2: decode to reconstruct targets
       Timeline.mark("START", "Reconstruct", Thread.currentThread().getId());
       metricTimer.start("Reconstruct");
-      reconstructTargets(toReconstructLen);
+      if (isTR) {
+        reconstructTraces(toReconstructLen);
+      } else {
+        reconstructTargets(toReconstructLen);
+      }
       metricTimer.end("Reconstruct");
       Timeline.mark("END", "Reconstruct", Thread.currentThread().getId());
       long decodeEnd = Time.monotonicNow();
@@ -158,9 +162,6 @@ class StripedBlockReconstructor extends StripedReconstructor
     int[] erasedIndices = stripedWriter.getRealTargetIndices();
     ByteBuffer[] outputs = stripedWriter.getRealTargetBuffers(toReconstructLen);
 
-    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
-
-    // Validation is not tested to work
     if (isValidationEnabled()) {
       markBuffers(inputs);
       decode(inputs, erasedIndices, outputs);
@@ -181,20 +182,27 @@ class StripedBlockReconstructor extends StripedReconstructor
         throw e;
       }
     } else {
-      if (isTR) {
-        metricTimer.start("Collect chunks");
-        reconstructTargetInputs.appendInputs(inputs);
-        ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
-        metricTimer.end("Collect chunks");
-        
-        decode(decoderInputs, erasedIndices, outputs);
-      } else {
-        decode(inputs, erasedIndices, outputs);
-      }
+      decode(inputs, erasedIndices, outputs);
     }
     stripedWriter.updateRealTargetBuffers(toReconstructLen);
   }
 
+  private void reconstructTraces(int toReconstructLen) throws IOException {
+    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
+
+    ByteBuffer[] inputs = getStripedReader().getInputBuffers(toReconstructLen);
+    int[] erasedIndices = stripedWriter.getRealTargetIndices();
+    ByteBuffer[] outputs = stripedWriter.getRealTargetBuffers(toReconstructLen);
+
+    metricTimer.start("Collect chunks");
+    reconstructTargetInputs.appendInputs(inputs);
+    ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
+    metricTimer.end("Collect chunks");
+        
+    decode(decoderInputs, erasedIndices, outputs);
+    stripedWriter.updateRealTargetBuffers(toReconstructLen);
+  }
+  
   private void decode(ByteBuffer[] inputs, int[] erasedIndices,
                       ByteBuffer[] outputs) throws IOException {
     long start = System.nanoTime();
