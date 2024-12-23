@@ -232,7 +232,7 @@ public class TRRawDecoder extends RawErasureDecoder {
                 System.arraycopy(R, 1, Rij, 0, Rij.length);
                 for (int b = 0; b < 256; b++) {
                     for (int a = 0; a < 8; a++) {
-                        int parityIndex = Rij[a] & (byte) (b);
+                        int parityIndex = (Rij[a] & (byte) (b)) & 0xFF;
                         int xorResult = (preComputedParity[parityIndex]) * erasedDualBasis[a];
                         revMem[(i<<8) + b] ^= (byte) xorResult;
                     }
@@ -280,7 +280,7 @@ public class TRRawDecoder extends RawErasureDecoder {
                 int traceIndex = i * decodeLength + test_codeword;
                 byte traces_as_number = decimalTrace[traceIndex];
                 output[outputOffset + test_codeword]
-                        = (byte) (output[outputOffset + test_codeword] ^ revMem[(i << 8) + traces_as_number]);;
+                        = (byte) (output[outputOffset + test_codeword] ^revMem[((i << 8) + traces_as_number) & 0xFF]);
             }
         }
     }
