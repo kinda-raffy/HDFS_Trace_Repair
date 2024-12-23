@@ -43,7 +43,6 @@ class StripedBlockReconstructor extends StripedReconstructor
   ByteBuffer[] totalByteBuffers = new ByteBuffer[nodeCount];
   private StripedWriter stripedWriter;
   private boolean isTR = false;
-  CollectChunkStream reconstructTargetInputs;
 
   StripedBlockReconstructor(ErasureCodingWorker worker,
                             StripedReconstructionInfo stripedReconInfo) {
@@ -102,11 +101,11 @@ class StripedBlockReconstructor extends StripedReconstructor
 
   @Override
   void reconstruct() throws IOException {
-    if (isTR) {
-      int erasedNodeIndex = getStripedReader().getErasedIndex();
-      reconstructTargetInputs = new CollectChunkStream(nodeCount, getMaxTargetLength(), erasedNodeIndex, recoveryTable);
-    }
     MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
+
+    ByteBuffer[][] blockTraces = new ByteBuffer[nodeCount][numberOfChunks()];
+    int currentChunkIndex = 0;
+
     while (getPositionInBlock() < getMaxTargetLength()) {
       DataNodeFaultInjector.get().stripedBlockReconstruction();
       long remaining = getMaxTargetLength() - getPositionInBlock();
@@ -127,7 +126,8 @@ class StripedBlockReconstructor extends StripedReconstructor
       Timeline.mark("START", "Reconstruct", Thread.currentThread().getId());
       metricTimer.start("Reconstruct");
       if (isTR) {
-        reconstructTraces(toReconstructLen);
+        reconstructTraces(toReconstructLen, currentChunkIndex, blockTraces);
+        currentChunkIndex += 1;
       } else {
         reconstructTargets(toReconstructLen);
       }
@@ -187,19 +187,77 @@ class StripedBlockReconstructor extends StripedReconstructor
     stripedWriter.updateRealTargetBuffers(toReconstructLen);
   }
 
-  private void reconstructTraces(int toReconstructLen) throws IOException {
+  private void reconstructTraces(int toReconstructLen, int currentChunkIndex, ByteBuffer[][] blockTraces) throws IOException {
     MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
 
     ByteBuffer[] inputs = getStripedReader().getInputBuffers(toReconstructLen);
     int[] erasedIndices = stripedWriter.getRealTargetIndices();
     ByteBuffer[] outputs = stripedWriter.getRealTargetBuffers(toReconstructLen);
+    int erasedIndex = getStripedReader().getErasedIndex();
 
     metricTimer.start("Collect chunks");
-    reconstructTargetInputs.appendInputs(inputs);
-    ByteBuffer[] decoderInputs = reconstructTargetInputs.getInputs(toReconstructLen);
+
+    for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+      if (nodeIndex == erasedIndex) { 
+        blockTraces[nodeIndex] = null;
+        continue; 
+      }
+
+      byte[] input = inputs[nodeIndex].array();
+      
+      for (int traceIndex = currentChunkIndex; traceIndex < blockTraces[nodeIndex].length; traceIndex++) {
+        // this code will only run once per block. 
+        // the foor loop is there to find the first fillable trace
+
+        ByteBuffer trace = blockTraces[nodeIndex][traceIndex];
+        if (trace == null || trace.remaining() != 0) {
+          byte bandwidth = recoveryTable.getByte(nodeIndex, erasedIndex, 0);
+          int traceLength = toReconstructLen * bandwidth / 8;
+
+          if (trace == null) { 
+            blockTraces[nodeIndex][traceIndex] = ByteBuffer.allocate(traceLength); 
+            trace = blockTraces[nodeIndex][traceIndex];
+          }
+          int filledInLength = trace.position();
+          int copiedAmount = traceLength - filledInLength;
+          trace.put(input, 0, copiedAmount);
+
+          // copy any leftover traces in the buffer
+          int toCopyTraceIndex = traceIndex + 1;
+          while (copiedAmount < input.length && toCopyTraceIndex < numberOfChunks()) {
+            if (blockTraces[nodeIndex][toCopyTraceIndex] == null) { 
+              blockTraces[nodeIndex][toCopyTraceIndex] = ByteBuffer.allocate(traceLength); 
+            }
+            ByteBuffer traceToCopy = blockTraces[nodeIndex][toCopyTraceIndex];
+            int toCopyLength = Math.min(traceLength, input.length - copiedAmount);
+            traceToCopy.put(input, copiedAmount, toCopyLength);
+            copiedAmount += toCopyLength;
+            toCopyTraceIndex += 1;
+          }
+          break;
+        }
+      }
+    }
+
+    ByteBuffer[] currentTraces = new ByteBuffer[nodeCount];
+    for (int i = 0; i < blockTraces.length; i++) {
+      if (blockTraces[i] == null) {
+        continue;
+      }
+      currentTraces[i] = blockTraces[i][currentChunkIndex];
+      currentTraces[i].rewind();
+    }
     metricTimer.end("Collect chunks");
-        
-    decode(decoderInputs, erasedIndices, outputs);
+    
+    decode(currentTraces, erasedIndices, outputs);
+
+    // Remove decoded trace from memory
+    for (int i = 0; i < blockTraces.length; i++) {
+      if (blockTraces[i] == null) { 
+        continue;
+      }
+      blockTraces[i][currentChunkIndex] = null;
+    }
     stripedWriter.updateRealTargetBuffers(toReconstructLen);
   }
   
@@ -217,64 +275,5 @@ class StripedBlockReconstructor extends StripedReconstructor
   private void clearBuffers() {
     getStripedReader().clearBuffers();
     stripedWriter.clearBuffers();
-  }
-
-
-  String bandwidths() {
-    byte[] bandwidth = new byte[nodeCount];
-    int erasedNodeIndex = getStripedReader().getErasedIndex();
-    for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
-      bandwidth[nodeIndex] = recoveryTable.getByte(nodeIndex, erasedNodeIndex, 0);
-    }
-    return Arrays.toString(bandwidth);
-  }
-  
-  static class CollectChunkStream {
-    byte[] bandwidth;
-    int nodeCount;
-    int erasedNodeIndex;
-    RecoveryTable recoveryTable;
-    int[] bufferReadPointers;
-    int[] writeLengths;
-    byte[][] totalInputs;
-
-    CollectChunkStream(int nodeCount, long maxTargetLength, int erasedNodeIndex, RecoveryTable recoveryTable) {
-      this.totalInputs = new byte[nodeCount][(int) maxTargetLength];
-      this.writeLengths = new int[nodeCount];
-      this.nodeCount = nodeCount;
-      this.erasedNodeIndex = erasedNodeIndex;
-      this.recoveryTable = recoveryTable;
-      this.bufferReadPointers = new int[nodeCount];
-      this.bandwidth = new byte[nodeCount];
-      for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
-        bandwidth[nodeIndex] = recoveryTable.getByte(nodeIndex, erasedNodeIndex, 0);
-      }
-    }
-    void appendInputs(ByteBuffer[] receivedByteBuffers) {
-      assert nodeCount == receivedByteBuffers.length;
-
-      for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
-        if (nodeIndex == erasedNodeIndex) { continue; }
-        assert receivedByteBuffers[nodeIndex] != null;
-        receivedByteBuffers[nodeIndex].rewind();
-        int nodeBufferLength = receivedByteBuffers[nodeIndex].capacity();
-        receivedByteBuffers[nodeIndex].get(totalInputs[nodeIndex], writeLengths[nodeIndex], nodeBufferLength);
-        writeLengths[nodeIndex] += nodeBufferLength;
-      }
-    }
-
-    ByteBuffer[] getInputs(int toReconstructLen) {
-      ByteBuffer[] decoderInputs = new ByteBuffer[nodeCount];
-      for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
-        if (nodeIndex == erasedNodeIndex) { continue; }
-        int inputLimit = toReconstructLen * bandwidth[nodeIndex] / 8;
-
-        byte[] trimmedInput = new byte[inputLimit];
-        System.arraycopy(totalInputs[nodeIndex], bufferReadPointers[nodeIndex], trimmedInput, 0, inputLimit);
-        decoderInputs[nodeIndex] = ByteBuffer.wrap(trimmedInput);
-        bufferReadPointers[nodeIndex] = bufferReadPointers[nodeIndex] + inputLimit;
-      }
-      return decoderInputs;
-    }
   }
 }

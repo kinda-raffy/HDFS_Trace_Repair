@@ -183,6 +183,10 @@ abstract class StripedReconstructor {
     return bytesWritten.get();
   }
 
+  public int numberOfChunks() {
+    return (int) (getMaxTargetLength() / getBufferSize());
+  }
+
   /**
    * Reconstruct one or more missed striped block in the striped block group,
    * the minimum number of live striped blocks should be no less than data
