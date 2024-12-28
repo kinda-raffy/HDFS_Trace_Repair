@@ -8,7 +8,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class NetworkTimer {
-    static final String network_path = "traffic.txt";
+    static final String network_path = "traffic.log";
 
     public static void mark(long blockId, String... metadata) {
         long timestamp = System.currentTimeMillis();
@@ -19,7 +19,7 @@ public class NetworkTimer {
                 line += m;
             }
         }
-        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get("traffic.txt"), StandardCharsets.UTF_8,
+        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(network_path), StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE, StandardOpenOption.APPEND);) {
             writer.write(line);
             writer.newLine();

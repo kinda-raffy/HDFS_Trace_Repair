@@ -8,7 +8,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class MetricTimer {
-    static final String metric_path = "metrics.txt";
+    static final String metric_path = "metrics.log";
     long thread;
     BufferedWriter writer;
 

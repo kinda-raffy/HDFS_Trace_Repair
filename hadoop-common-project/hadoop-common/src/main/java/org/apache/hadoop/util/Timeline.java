@@ -10,7 +10,7 @@ import java.nio.file.StandardOpenOption;
 public class Timeline {
     public static void mark(String action, String label, long thread_id) {
         long timestamp = System.currentTimeMillis();
-        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get("timeline.txt"), StandardCharsets.UTF_8,
+        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get("timeline.log"), StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
             writer.write(timestamp + "\t" + thread_id + "\t" + action + "\t" + label);
             writer.newLine();
