@@ -572,9 +572,9 @@ class BlockTraceSender implements java.io.Closeable {
 
         byte[] encoderInput = new byte[dataLen];
         
-        metricTimer.start("Read block");
+        metricTimer.start("Read");
         replicaInputStreams.readDataFully(encoderInput, 0, dataLen);
-        metricTimer.end("Read block");
+        metricTimer.end("Read");
 
         Timeline.mark("START", "Compute trace", Thread.currentThread().getId());
         metricTimer.start("Compute trace", Long.toString(block.getBlockId()));
