@@ -136,6 +136,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       long decodeEnd = Time.monotonicNow();
 
       // step3: transfer data
+      metricTimer.start("Write");
       long bytesToWrite = (long) toReconstructLen * stripedWriter.getTargets();
       if (getDatanode().getEcReconstuctWriteThrottler() != null) {
         getDatanode().getEcReconstuctWriteThrottler().throttle(bytesToWrite);
@@ -144,6 +145,7 @@ class StripedBlockReconstructor extends StripedReconstructor
         String error = "Transfer failed for all targets.";
         throw new IOException(error);
       }
+      metricTimer.end("Write");
       long writeEnd = Time.monotonicNow();
 
       // Only successful reconstructions are recorded.
