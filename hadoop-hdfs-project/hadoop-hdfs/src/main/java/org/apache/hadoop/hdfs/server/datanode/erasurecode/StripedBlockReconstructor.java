@@ -198,7 +198,6 @@ class StripedBlockReconstructor extends StripedReconstructor
     int erasedIndex = getStripedReader().getErasedIndex();
 
     metricTimer.start("Collect chunks");
-
     for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
       if (nodeIndex == erasedIndex) { 
         blockTraces[nodeIndex] = null;
@@ -248,18 +247,12 @@ class StripedBlockReconstructor extends StripedReconstructor
       }
       currentTraces[i] = blockTraces[i][currentChunkIndex];
       currentTraces[i].rewind();
+      // Remove decoded trace from memory
+      blockTraces[i][currentChunkIndex] = null;
     }
     metricTimer.end("Collect chunks");
     
     decode(currentTraces, erasedIndices, outputs);
-
-    // Remove decoded trace from memory
-    for (int i = 0; i < blockTraces.length; i++) {
-      if (blockTraces[i] == null) { 
-        continue;
-      }
-      blockTraces[i][currentChunkIndex] = null;
-    }
     stripedWriter.updateRealTargetBuffers(toReconstructLen);
   }
   
