@@ -72,7 +72,6 @@ import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.MetricTimer;
 import org.apache.hadoop.util.StopWatch;
 import org.apache.hadoop.util.Time;
-import org.apache.hadoop.util.Timeline;
 import org.apache.zookeeper.server.metric.Metric;
 import org.slf4j.Logger;
 

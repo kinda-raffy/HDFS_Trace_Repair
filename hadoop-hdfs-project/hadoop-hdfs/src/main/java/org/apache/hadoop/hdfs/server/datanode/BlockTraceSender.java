@@ -576,11 +576,9 @@ class BlockTraceSender implements java.io.Closeable {
         replicaInputStreams.readDataFully(encoderInput, 0, dataLen);
         metricTimer.end("Read");
 
-        Timeline.mark("START", "Compute trace", Thread.currentThread().getId());
         metricTimer.start("Compute trace");
         byte[] encoderOutput = repairTraceGeneration(helperNodeIndex, lostNodeIndex, encoderInput, dataLen);
         metricTimer.end("Compute trace");
-        Timeline.mark("END", "Compute trace", Thread.currentThread().getId());
         // byte[] encoderOutput = new byte[(int) Math.ceil((double) nodeTrace.length / 8)];
         // compressTrace(nodeTrace, encoderOutput);
 
