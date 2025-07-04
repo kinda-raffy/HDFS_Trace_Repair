@@ -65,15 +65,19 @@ public final class RSUtil {
    * @param m m.
    */
   public static void genCauchyMatrix(byte[] a, int m, int k) {
-    // Identity matrix in high position
+    // Identity matrix in high position.
     for (int i = 0; i < k; i++) {
       a[k * i + i] = 1;
     }
 
-    // For the rest choose 1/(i + j) | i != j
+    // For the rest choose 1/(i + j) | i != j.
     int pos = k * k;
-    for (int i = k; i < m; i++) {
-      for (int j = 0; j < k; j++) {
+
+    byte[] iValues = { (byte) 0, (byte) 1, (byte) 152, (byte) 78, (byte) 10, (byte) 153 };
+    byte[] jValues = { (byte) 214, (byte) 68, (byte) 147 };
+
+    for (byte j : jValues) {
+      for (byte i : iValues) {
         a[pos++] = GF256.gfInv((byte) (i ^ j));
       }
     }
