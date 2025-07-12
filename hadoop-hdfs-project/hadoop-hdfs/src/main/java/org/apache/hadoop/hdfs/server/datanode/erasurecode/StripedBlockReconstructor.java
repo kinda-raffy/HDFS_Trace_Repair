@@ -110,6 +110,7 @@ class StripedBlockReconstructor extends StripedReconstructor
               (int) Math.min(getStripedReader().getBufferSize(), remaining);
 
       long start = Time.monotonicNow();
+      metricTimer.start("Read");
       long bytesToRead = (long) toReconstructLen * getStripedReader().getMinRequiredSources();
       if (getDatanode().getEcReconstuctReadThrottler() != null) {
         getDatanode().getEcReconstuctReadThrottler().throttle(bytesToRead);
@@ -117,6 +118,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       // step1: read from minimum source DNs required for reconstruction.
       // The returned success list is the source DNs we do real read from
       getStripedReader().readMinimumSources(toReconstructLen);
+      metricTimer.end("Read");
       long readEnd = Time.monotonicNow();
 
       // step2: decode to reconstruct targets
