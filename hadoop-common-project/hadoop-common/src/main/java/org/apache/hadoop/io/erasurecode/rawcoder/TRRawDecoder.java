@@ -33,12 +33,15 @@ import java.nio.ByteBuffer;
 
 @InterfaceAudience.Private
 public class TRRawDecoder extends RawErasureDecoder {
+    MetricTimer metricTimer;
+
     public TRRawDecoder(ErasureCoderOptions coderOptions) {
         super(coderOptions);
         preCompute();
         this.recoveryTable = new RecoveryTable(coderOptions.getNumAllUnits());
         this.bw = new byte[coderOptions.getNumAllUnits()];
         this.dualBasisTable = new DualBasisTable(coderOptions.getNumAllUnits());
+        this.metricTimer = new MetricTimer(Thread.currentThread().getId());
     }
 
     private final RecoveryTable recoveryTable;
@@ -94,7 +97,6 @@ public class TRRawDecoder extends RawErasureDecoder {
 
     @Override
     protected void doDecode(ByteArrayDecodingState decodingState) {
-        MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
         CoderUtil.resetOutputBuffers(
             decodingState.outputs,
             decodingState.outputOffsets,
@@ -110,12 +112,12 @@ public class TRRawDecoder extends RawErasureDecoder {
         for (int i = 0; i < n; i++) {
             bw[i] = recoveryTable.getByte(i, erasedIndex, 0);
         }
-        metricTimer.start("Decompress trace");
+        this.metricTimer.start("Decompress trace");
         byte[] decimalTrace = decompressTraceCombined(
                 decodingState.inputs, decodingState.inputOffsets,
                 erasedIndex, decodingState.decodeLength
         );
-        metricTimer.end("Decompress trace");
+        this.metricTimer.end("Decompress trace");
         byte[] revMem = repairDecimalTrace(erasedIndex);
         constructCj(
                 erasedIndex, decodingState.decodeLength, decimalTrace,

@@ -219,6 +219,8 @@ class BlockTraceSender implements java.io.Closeable {
 
     long beginOffset;
 
+    MetricTimer metricTimer;
+
     /**
      * Constructor
      *
@@ -242,6 +244,7 @@ class BlockTraceSender implements java.io.Closeable {
         DataInputStream checksumIn = null;
         this.fileIoProvider = datanode.getFileIoProvider();
         this.helperTable = new HelperTable(dataBlkNum + parityBlkNum);
+        this.metricTimer = new MetricTimer(Thread.currentThread().getId());
         try {
             this.block = block;
             this.corruptChecksumOk = corruptChecksumOk;
@@ -563,8 +566,6 @@ class BlockTraceSender implements java.io.Closeable {
      */
     private int[] sendPacketTraceReader(ByteBuffer packetBuffer, int maxChunks, OutputStream out,
                                         boolean transferTo, DataTransferThrottler throttler) throws IOException {
-        MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
-
         long normalDataReadingLen = chunkSize * (long) maxChunks;
         int dataLen = (int) Math.min(endOffset - offset, normalDataReadingLen);
         // dataLen = 16
@@ -572,13 +573,13 @@ class BlockTraceSender implements java.io.Closeable {
 
         byte[] encoderInput = new byte[dataLen];
         
-        metricTimer.start("Read");
+        this.metricTimer.start("Read");
         replicaInputStreams.readDataFully(encoderInput, 0, dataLen);
-        metricTimer.end("Read");
+        this.metricTimer.end("Read");
 
-        metricTimer.start("Compute trace");
+        this.metricTimer.start("Compute trace");
         byte[] encoderOutput = repairTraceGeneration(helperNodeIndex, lostNodeIndex, encoderInput, dataLen);
-        metricTimer.end("Compute trace");
+        this.metricTimer.end("Compute trace");
         // byte[] encoderOutput = new byte[(int) Math.ceil((double) nodeTrace.length / 8)];
         // compressTrace(nodeTrace, encoderOutput);
 
@@ -652,8 +653,6 @@ class BlockTraceSender implements java.io.Closeable {
             int nodeIndex, int erasedNodeIndex,
             byte[] inputs, int encodeLength
     ) {
-        MetricTimer timer = new MetricTimer(Thread.currentThread().getId());
-
         byte bw = helperTable.getByte(nodeIndex, erasedNodeIndex, 0);
         byte[] repairTrace = new byte[bw * encodeLength];
         byte[] H = helperTable.getRow(nodeIndex, erasedNodeIndex);
@@ -696,9 +695,9 @@ class BlockTraceSender implements java.io.Closeable {
             }
         }
         byte[] compressedRepairTrace = new byte[(int) (encodeLength * (bw / 8.0))];
-        timer.start("Compress trace");
+        this.metricTimer.start("Compress trace");
         compressTrace(repairTrace, compressedRepairTrace);
-        timer.end("Compress trace");
+        this.metricTimer.end("Compress trace");
         return compressedRepairTrace;
     }
 

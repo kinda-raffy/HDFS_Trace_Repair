@@ -42,12 +42,14 @@ class StripedBlockReconstructor extends StripedReconstructor
   ByteBuffer[] totalByteBuffers = new ByteBuffer[nodeCount];
   private StripedWriter stripedWriter;
   private boolean isTR = false;
+  MetricTimer metricTimer;
 
   StripedBlockReconstructor(ErasureCodingWorker worker,
                             StripedReconstructionInfo stripedReconInfo) {
     super(worker, stripedReconInfo);
     int totalBlkNum = stripedReconInfo.getEcPolicy().getNumDataUnits() + stripedReconInfo.getEcPolicy().getNumParityUnits();
     this.recoveryTable = new RecoveryTable(totalBlkNum);
+    this.metricTimer = new MetricTimer(Thread.currentThread().getId());
 
     stripedWriter = new StripedWriter(this, getDatanode(),
             getConf(), stripedReconInfo);
@@ -63,8 +65,7 @@ class StripedBlockReconstructor extends StripedReconstructor
 
   @Override
   public void run() {
-    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
-    metricTimer.start("Recovery");
+    this.metricTimer.start("Recovery");
     try {
       initDecoderIfNecessary();
       initDecodingValidatorIfNecessary();
@@ -93,13 +94,11 @@ class StripedBlockReconstructor extends StripedReconstructor
       stripedWriter.close();
       cleanup();
     }
-    metricTimer.end("Recovery");
+    this.metricTimer.end("Recovery");
   }
 
   @Override
   void reconstruct() throws IOException {
-    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
-
     ByteBuffer[][] blockTraces = new ByteBuffer[nodeCount][numberOfChunks()];
     int currentChunkIndex = 0;
 
@@ -110,7 +109,7 @@ class StripedBlockReconstructor extends StripedReconstructor
               (int) Math.min(getStripedReader().getBufferSize(), remaining);
 
       long start = Time.monotonicNow();
-      metricTimer.start("Read");
+      this.metricTimer.start("Read");
       long bytesToRead = (long) toReconstructLen * getStripedReader().getMinRequiredSources();
       if (getDatanode().getEcReconstuctReadThrottler() != null) {
         getDatanode().getEcReconstuctReadThrottler().throttle(bytesToRead);
@@ -118,22 +117,22 @@ class StripedBlockReconstructor extends StripedReconstructor
       // step1: read from minimum source DNs required for reconstruction.
       // The returned success list is the source DNs we do real read from
       getStripedReader().readMinimumSources(toReconstructLen);
-      metricTimer.end("Read");
+      this.metricTimer.end("Read");
       long readEnd = Time.monotonicNow();
 
       // step2: decode to reconstruct targets
-      metricTimer.start("Reconstruct");
+      this.metricTimer.start("Reconstruct");
       if (isTR) {
         reconstructTraces(toReconstructLen, currentChunkIndex, blockTraces);
         currentChunkIndex += 1;
       } else {
         reconstructTargets(toReconstructLen);
       }
-      metricTimer.end("Reconstruct");
+      this.metricTimer.end("Reconstruct");
       long decodeEnd = Time.monotonicNow();
 
       // step3: transfer data
-      metricTimer.start("Write");
+      this.metricTimer.start("Write");
       long bytesToWrite = (long) toReconstructLen * stripedWriter.getTargets();
       if (getDatanode().getEcReconstuctWriteThrottler() != null) {
         getDatanode().getEcReconstuctWriteThrottler().throttle(bytesToWrite);
@@ -142,7 +141,7 @@ class StripedBlockReconstructor extends StripedReconstructor
         String error = "Transfer failed for all targets.";
         throw new IOException(error);
       }
-      metricTimer.end("Write");
+      this.metricTimer.end("Write");
       long writeEnd = Time.monotonicNow();
 
       // Only successful reconstructions are recorded.
@@ -187,14 +186,13 @@ class StripedBlockReconstructor extends StripedReconstructor
   }
 
   private void reconstructTraces(int toReconstructLen, int currentChunkIndex, ByteBuffer[][] blockTraces) throws IOException {
-    MetricTimer metricTimer = new MetricTimer(Thread.currentThread().getId());
 
     ByteBuffer[] inputs = getStripedReader().getInputBuffers(toReconstructLen);
     int[] erasedIndices = stripedWriter.getRealTargetIndices();
     ByteBuffer[] outputs = stripedWriter.getRealTargetBuffers(toReconstructLen);
     int erasedIndex = getStripedReader().getErasedIndex();
 
-    metricTimer.start("Collect chunks");
+    this.metricTimer.start("Collect chunks");
     for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
       if (nodeIndex == erasedIndex) { 
         blockTraces[nodeIndex] = null;
@@ -247,7 +245,7 @@ class StripedBlockReconstructor extends StripedReconstructor
       // Remove decoded trace from memory
       blockTraces[i][currentChunkIndex] = null;
     }
-    metricTimer.end("Collect chunks");
+    this.metricTimer.end("Collect chunks");
     
     decode(currentTraces, erasedIndices, outputs);
     stripedWriter.updateRealTargetBuffers(toReconstructLen);
